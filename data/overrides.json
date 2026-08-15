@@ -1,0 +1,17 @@
+{
+  "aeries-dashboard": {
+    "name": "Grade Dashboard",
+    "tagline": "Casas family Aeries grades and insights",
+    "category": "Family"
+  },
+  "geometry-arena": {
+    "name": "Geometry Arena",
+    "tagline": "Geometry Wars–style twin-stick shooter",
+    "category": "Games"
+  },
+  "nohel-delgadillo-site": {
+    "name": "Nohel Delgadillo History",
+    "tagline": "Family history timeline",
+    "category": "Family"
+  }
+}

@@ -1,0 +1,28 @@
+# Copy into another repo as .github/workflows/notify-hub.yml
+# so a successful deploy immediately refreshes the Project Hub
+# instead of waiting for the next scheduled scan.
+#
+# The calling repo needs a secret HUB_DISPATCH_TOKEN:
+# a classic PAT (or fine-grained token) with "Actions: write"
+# on davidcasas82/davidcasas82.github.io.
+
+name: Notify Project Hub
+
+on:
+  workflow_dispatch:
+  # Example: also fire after your own deploy workflow finishes
+  # workflow_run:
+  #   workflows: ["Deploy"]
+  #   types: [completed]
+
+jobs:
+  ping:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch project-published
+        env:
+          GH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/davidcasas82/davidcasas82.github.io/dispatches \
+            -f event_type=project-published

@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-08-15T22:47:51.192Z",
+  "owner": "davidcasas82",
+  "hubUrl": "https://davidcasas82.github.io/",
+  "projects": [
+    {
+      "id": "aeries-dashboard",
+      "name": "Grade Dashboard",
+      "tagline": "Casas family Aeries grades and insights",
+      "url": "https://davidcasas82.github.io/aeries-dashboard/",
+      "category": "Family",
+      "source": "github-pages",
+      "repo": "https://github.com/davidcasas82/aeries-dashboard",
+      "private": false,
+      "updatedAt": "2026-08-15T09:30:46Z"
+    },
+    {
+      "id": "nohel-delgadillo-site",
+      "name": "Nohel Delgadillo History",
+      "tagline": "Family history timeline",
+      "url": "https://davidcasas82.github.io/nohel-delgadillo-site/",
+      "category": "Family",
+      "source": "github-pages",
+      "repo": "https://github.com/davidcasas82/nohel-delgadillo-site",
+      "private": false,
+      "updatedAt": "2026-08-14T15:37:25Z"
+    },
+    {
+      "id": "geometry-arena",
+      "name": "Geometry Arena",
+      "tagline": "Geometry Wars–style twin-stick shooter",
+      "url": "https://davidcasas82.github.io/geometry-arena/",
+      "category": "Games",
+      "source": "github-pages",
+      "repo": "https://github.com/davidcasas82/geometry-arena",
+      "private": false,
+      "updatedAt": "2026-07-30T04:51:38Z"
+    },
+    {
+      "id": "photography",
+      "name": "David Casas Photography",
+      "tagline": "Arangetram studio portraits in Orange County",
+      "url": "https://davidcasasphotography.com",
+      "category": "Photography",
+      "source": "custom",
+      "repo": null,
+      "private": false,
+      "updatedAt": null
+    }
+  ]
+}
