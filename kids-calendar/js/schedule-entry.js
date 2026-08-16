@@ -297,7 +297,7 @@
     const cycle = stay + ((leaveDow - returnDow + 7) % 7 || 7);
     const slot = ((diffDays % cycle) + cycle) % cycle;
     if (slot === 0) return from;
-    if (slot < stay) return to;
+    if (slot <= stay) return to;
     return from;
   }
 
