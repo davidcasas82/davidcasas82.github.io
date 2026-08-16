@@ -1527,23 +1527,23 @@
 
         function canHouseChange(iso, mapOrRaw) {
             const today = mapOrRaw[iso];
-            const prev = mapOrRaw[addDaysISO(iso, -1)];
-            return !!(today && prev && prev.parent && today.parent && prev.parent !== today.parent);
+            const next = mapOrRaw[addDaysISO(iso, 1)];
+            return !!(today && next && today.parent && next.parent && today.parent !== next.parent);
         }
 
-        function enrichDay(iso, rawToday, rawPrev) {
+        function enrichDay(iso, rawToday, rawNext) {
             if (!rawToday) return null;
             const ov = handoffOverride(iso);
-            const prevParent = rawPrev && rawPrev.parent;
-            const split = !!(prevParent && prevParent !== rawToday.parent && !(ov && ov.fullDay));
+            const nextParent = rawNext && rawNext.parent;
+            const split = !!(nextParent && nextParent !== rawToday.parent && !(ov && ov.fullDay));
             return {
                 parent: rawToday.parent,
                 note: rawToday.note || '',
                 startTime: rawToday.startTime || '',
                 endTime: rawToday.endTime || '',
                 blockId: rawToday.blockId,
-                morningParent: split ? prevParent : rawToday.parent,
-                afternoonParent: rawToday.parent,
+                morningParent: rawToday.parent,
+                afternoonParent: split ? nextParent : rawToday.parent,
                 isTransition: split,
                 handoffTime: split ? ((ov && ov.time) || defaultHandoffTime(iso)) : null,
                 fullDayOverride: !!(ov && ov.fullDay),
@@ -1572,7 +1572,7 @@
             const raw = rawDayMap();
             const map = {};
             for (const iso of Object.keys(raw)) {
-                map[iso] = enrichDay(iso, raw[iso], raw[addDaysISO(iso, -1)]);
+                map[iso] = enrichDay(iso, raw[iso], raw[addDaysISO(iso, 1)]);
             }
             return map;
         }
@@ -1695,7 +1695,7 @@
             }
             const tip = document.createElement('div');
             tip.className = 'legend-hint';
-            tip.textContent = 'Split day = morning previous house, afternoon new house · gold = no school';
+            tip.textContent = 'Split = last day of a stretch (morning that house, afternoon the next) · gold = no school';
             el.appendChild(tip);
         }
 
@@ -1843,7 +1843,7 @@
                 const afternoonLabel = data.parents[todayAsg.afternoonParent]?.label || shortLabel(null, todayAsg.afternoonParent);
                 $('heroKicker').textContent = 'Right now';
                 $('heroPlace').textContent = morningLabel;
-                $('heroCountdown').textContent = 'Handoff at ' + formatClock(todayAsg.handoffTime);
+                $('heroCountdown').textContent = 'Last morning · handoff at ' + formatClock(todayAsg.handoffTime);
                 const bits = ['Morning at ' + morningLabel, afternoonLabel + ' after ' + formatClock(todayAsg.handoffTime)];
                 if (schoolToday) bits.push('TUSD: ' + schoolToday);
                 if (todayAsg.note) bits.push(todayAsg.note);
@@ -1856,14 +1856,47 @@
                     `<span class="stat-dot" style="background:${c}"></span><span></span>`;
                 $('heroNextPlace').querySelector('span:last-child').textContent = afternoonLabel;
                 $('heroNextWhen').textContent = 'Starting this afternoon · ' + formatClock(todayAsg.handoffTime);
-                const nextStay = stayBlockAround(map, today);
+                const nextStay = stayBlockAround(map, addDaysISO(today, 1));
                 if (nextStay) {
                     const nextLen = daysBetweenInclusive(nextStay.start, nextStay.end);
                     $('heroNextDetail').textContent =
                         nextLen === 1
-                            ? 'Tonight only'
+                            ? 'One full day there tomorrow'
                             : nextLen + ' days there · through ' + formatDayShort(nextStay.end);
                 } else {
+                    $('heroNextDetail').textContent = 'First night there tonight';
+                }
+                return;
+            }
+
+            if (todayAsg && todayAsg.isTransition && !isBeforeHandoff(todayAsg)) {
+                paintHeroParent(hero, todayAsg.afternoonParent);
+                const afternoonLabel = data.parents[todayAsg.afternoonParent]?.label || shortLabel(null, todayAsg.afternoonParent);
+                $('heroKicker').textContent = 'Right now';
+                $('heroPlace').textContent = afternoonLabel;
+                $('heroCountdown').textContent = 'First night · since ' + formatClock(todayAsg.handoffTime);
+                const bits = ['Handoff was at ' + formatClock(todayAsg.handoffTime)];
+                if (schoolToday) bits.push('TUSD: ' + schoolToday);
+                if (todayAsg.note) bits.push(todayAsg.note);
+                $('heroSub').textContent = bits.join(' · ');
+                const nextStay = stayBlockAround(map, addDaysISO(today, 1));
+                if (nextStay) {
+                    const nextLen = daysBetweenInclusive(nextStay.start, nextStay.end);
+                    progressWrap.hidden = nextLen <= 1;
+                    progressBar.style.width = nextLen > 1 ? Math.min(100, Math.round((1 / (nextLen + 1)) * 100)) + '%' : '100%';
+                    $('heroNextPlace').innerHTML =
+                        `<span class="stat-dot" style="background:${parentColor(todayAsg.afternoonParent)}"></span><span></span>`;
+                    $('heroNextPlace').querySelector('span:last-child').textContent = afternoonLabel;
+                    $('heroNextWhen').textContent = 'Continuing tomorrow';
+                    $('heroNextDetail').textContent =
+                        nextLen === 1
+                            ? 'Through ' + formatDayShort(nextStay.end)
+                            : nextLen + ' more days · through ' + formatDayShort(nextStay.end);
+                } else {
+                    progressWrap.hidden = true;
+                    progressBar.style.width = '100%';
+                    $('heroNextPlace').innerHTML = '<span class="stat-muted">Tonight only so far</span>';
+                    $('heroNextWhen').textContent = 'Add the rest of this stretch';
                     $('heroNextDetail').textContent = '';
                 }
                 return;
