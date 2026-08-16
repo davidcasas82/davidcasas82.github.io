@@ -566,6 +566,24 @@
                 -45deg, transparent, transparent 4px, rgba(0,0,0,0.12) 4px, rgba(0,0,0,0.12) 8px
             );
         }
+        .week-day.split,
+        .day-cell.split {
+            border-color: transparent;
+            color: #fff;
+        }
+        .week-day.split .week-place,
+        .day-cell.split .day-place {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+        .initials-pair {
+            display: inline-flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .mini-day.split {
+            color: #fff;
+            background: none;
+        }
         .day-note-dot {
             position: absolute;
             top: 10px;
@@ -921,6 +939,7 @@
                     <button type="button" class="chip-btn mom" id="assignMom">Mom</button>
                     <button type="button" class="chip-btn dad" id="assignDad">Dad</button>
                     <button type="button" class="chip-btn clear" id="assignClear">Clear</button>
+                    <button type="button" class="chip-btn ghost" id="rangeSplitToggle" hidden>Make full day</button>
                     <button type="button" class="chip-btn ghost" id="rangeDetails">Details…</button>
                     <button type="button" class="chip-btn ghost" id="rangeCancel">Cancel</button>
                 </div>
@@ -961,6 +980,15 @@
                         <label for="editEndTime">End time</label>
                         <input type="time" id="editEndTime">
                     </div>
+                </div>
+                <div id="handoffFields" class="field" hidden>
+                    <label class="check-row" style="margin-top:0">
+                        <input type="checkbox" id="editFullDay">
+                        <span>Full day (no morning / afternoon split)</span>
+                    </label>
+                    <label for="editHandoffTime">Handoff time</label>
+                    <input type="time" id="editHandoffTime">
+                    <p class="field-hint">School days default to 3:00 PM pickup. TUSD no-school days default to noon.</p>
                 </div>
                 <div class="field">
                     <label for="editNote">Note</label>
@@ -1166,6 +1194,8 @@
         const AUTO_REFRESH_MS = 60 * 1000;
         const UNDO_MAX = 30;
         const LONG_VIEWS = new Set(['quarter', 'sixmonth', 'year']);
+        const SCHOOL_HANDOFF = '15:00';
+        const NOSCHOOL_HANDOFF = '12:00';
 
         const defaultData = () => ({
             version: 1,
@@ -1175,6 +1205,7 @@
                 dad: { label: "Dad's House", color: '#6b7cff' },
             },
             blocks: [],
+            handoffs: {},
         });
 
         let config = null;
@@ -1435,7 +1466,91 @@
             if (updatePreview !== false) updatePatternPreview();
         }
 
-        function dayMap() {
+        function timeToMinutes(hhmm) {
+            const parts = String(hhmm || '').split(':');
+            const h = Number(parts[0]);
+            const m = Number(parts[1]);
+            if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+            return h * 60 + m;
+        }
+
+        function nowMinutes() {
+            const n = new Date();
+            return n.getHours() * 60 + n.getMinutes();
+        }
+
+        function formatClock(hhmm) {
+            const mins = timeToMinutes(hhmm);
+            if (mins == null) return hhmm || '';
+            const dt = new Date();
+            dt.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+            return dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        }
+
+        function defaultHandoffTime(iso) {
+            return schoolLabel(iso) ? NOSCHOOL_HANDOFF : SCHOOL_HANDOFF;
+        }
+
+        function normalizeHandoffs(raw) {
+            const out = {};
+            if (!raw || typeof raw !== 'object') return out;
+            for (const [iso, v] of Object.entries(raw)) {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || !v || typeof v !== 'object') continue;
+                if (v.fullDay) out[iso] = { fullDay: true };
+                else if (typeof v.time === 'string' && /^\d{1,2}:\d{2}$/.test(v.time)) {
+                    const [h, m] = v.time.split(':');
+                    out[iso] = { time: String(h).padStart(2, '0') + ':' + m };
+                }
+            }
+            return out;
+        }
+
+        function handoffOverride(iso) {
+            return (data.handoffs && data.handoffs[iso]) || null;
+        }
+
+        function setHandoffOverride(iso, value) {
+            if (!data.handoffs) data.handoffs = {};
+            if (!value) delete data.handoffs[iso];
+            else data.handoffs[iso] = value;
+        }
+
+        function parentColor(parent) {
+            return data.parents[parent]?.color || '#555';
+        }
+
+        function paintSplitBackground(el, morning, afternoon) {
+            const a = parentColor(morning);
+            const b = parentColor(afternoon);
+            el.style.background = `linear-gradient(90deg, ${a} 0 50%, ${b} 50% 100%)`;
+        }
+
+        function canHouseChange(iso, mapOrRaw) {
+            const today = mapOrRaw[iso];
+            const prev = mapOrRaw[addDaysISO(iso, -1)];
+            return !!(today && prev && prev.parent && today.parent && prev.parent !== today.parent);
+        }
+
+        function enrichDay(iso, rawToday, rawPrev) {
+            if (!rawToday) return null;
+            const ov = handoffOverride(iso);
+            const prevParent = rawPrev && rawPrev.parent;
+            const split = !!(prevParent && prevParent !== rawToday.parent && !(ov && ov.fullDay));
+            return {
+                parent: rawToday.parent,
+                note: rawToday.note || '',
+                startTime: rawToday.startTime || '',
+                endTime: rawToday.endTime || '',
+                blockId: rawToday.blockId,
+                morningParent: split ? prevParent : rawToday.parent,
+                afternoonParent: rawToday.parent,
+                isTransition: split,
+                handoffTime: split ? ((ov && ov.time) || defaultHandoffTime(iso)) : null,
+                fullDayOverride: !!(ov && ov.fullDay),
+            };
+        }
+
+        function rawDayMap() {
             const map = {};
             for (const b of data.blocks) {
                 if (!b || !b.parent || !b.startDate) continue;
@@ -1449,6 +1564,15 @@
                         blockId: b.id,
                     };
                 });
+            }
+            return map;
+        }
+
+        function dayMap() {
+            const raw = rawDayMap();
+            const map = {};
+            for (const iso of Object.keys(raw)) {
+                map[iso] = enrichDay(iso, raw[iso], raw[addDaysISO(iso, -1)]);
             }
             return map;
         }
@@ -1491,6 +1615,7 @@
             const hint = $('selectionHint');
             if (!r || kioskMode) {
                 bar.classList.remove('show');
+                $('rangeSplitToggle').hidden = true;
                 hint.textContent = kioskMode ? '' : 'Tap a day to select · tap another day for a range · then Mom / Dad';
                 hint.classList.remove('active');
                 return;
@@ -1508,6 +1633,30 @@
                 hint.textContent = days.length + ' day' + (days.length === 1 ? '' : 's') + ' selected · choose Mom / Dad or Details';
             }
             hint.classList.add('active');
+
+            const splitBtn = $('rangeSplitToggle');
+            const raw = rawDayMap();
+            const canSplit = r.start === r.end && canHouseChange(r.start, raw);
+            if (!canSplit) {
+                splitBtn.hidden = true;
+            } else {
+                splitBtn.hidden = false;
+                const ov = handoffOverride(r.start);
+                splitBtn.textContent = (ov && ov.fullDay) ? 'Split day' : 'Make full day';
+            }
+        }
+
+        function toggleSplitDay() {
+            const r = selectedRange();
+            if (!r || r.start !== r.end || kioskMode) return;
+            const raw = rawDayMap();
+            if (!canHouseChange(r.start, raw)) return;
+            pushUndo();
+            const ov = handoffOverride(r.start);
+            if (ov && ov.fullDay) setHandoffOverride(r.start, null);
+            else setHandoffOverride(r.start, { fullDay: true });
+            setDirty(true);
+            renderAll();
         }
 
         function onDayClick(iso) {
@@ -1546,8 +1695,55 @@
             }
             const tip = document.createElement('div');
             tip.className = 'legend-hint';
-            tip.textContent = 'M / D = house · gold mark = no school';
+            tip.textContent = 'Split day = morning previous house, afternoon new house · gold = no school';
             el.appendChild(tip);
+        }
+
+        function splitLabel(asg) {
+            if (!asg || !asg.isTransition) return asg ? shortLabel(assignmentLabel(asg), asg.parent) : '';
+            const am = shortLabel(data.parents[asg.morningParent]?.label, asg.morningParent);
+            const pm = shortLabel(data.parents[asg.afternoonParent]?.label, asg.afternoonParent);
+            return am + ' → ' + pm;
+        }
+
+        function appendInitials(host, asg) {
+            if (!asg) return;
+            if (asg.isTransition) {
+                const wrap = document.createElement('span');
+                wrap.className = 'initials-pair';
+                const a = document.createElement('span');
+                a.className = 'parent-initial';
+                a.textContent = parentInitial(asg.morningParent);
+                const b = document.createElement('span');
+                b.className = 'parent-initial';
+                b.textContent = parentInitial(asg.afternoonParent);
+                wrap.appendChild(a);
+                wrap.appendChild(b);
+                host.appendChild(wrap);
+                return;
+            }
+            const ini = document.createElement('span');
+            ini.className = 'parent-initial';
+            ini.textContent = parentInitial(asg.parent);
+            host.appendChild(ini);
+        }
+
+        function paintDayTile(el, asg) {
+            if (!asg) return;
+            el.classList.add('has-parent');
+            if (asg.isTransition) {
+                el.classList.add('split');
+                paintSplitBackground(el, asg.morningParent, asg.afternoonParent);
+                return;
+            }
+            paintBackground(el, asg.parent);
+            if (asg.startTime || asg.endTime) el.classList.add('partial');
+        }
+
+        function isBeforeHandoff(asg) {
+            if (!asg || !asg.isTransition || !asg.handoffTime) return false;
+            const mins = timeToMinutes(asg.handoffTime);
+            return mins != null && nowMinutes() < mins;
         }
 
         function formatDayLong(iso) {
@@ -1620,24 +1816,61 @@
             };
         }
 
+        function paintHeroParent(hero, parent) {
+            hero.dataset.parent = parent || 'none';
+            const color = parent ? parentColor(parent) : '';
+            if (color) {
+                hero.style.background = parent === 'dad'
+                    ? `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 65%, #1a1a2e))`
+                    : `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 65%, #0a2a22))`;
+            } else hero.style.background = '';
+        }
+
         function renderHero() {
             const map = dayMap();
             const today = todayISO();
             const hero = $('heroStay');
             const schoolToday = schoolLabel(today);
+            const todayAsg = map[today];
             const stay = stayBlockAround(map, today);
 
             const progressWrap = $('heroProgressWrap');
             const progressBar = $('heroProgressBar');
 
+            if (todayAsg && todayAsg.isTransition && isBeforeHandoff(todayAsg)) {
+                paintHeroParent(hero, todayAsg.morningParent);
+                const morningLabel = data.parents[todayAsg.morningParent]?.label || shortLabel(null, todayAsg.morningParent);
+                const afternoonLabel = data.parents[todayAsg.afternoonParent]?.label || shortLabel(null, todayAsg.afternoonParent);
+                $('heroKicker').textContent = 'Right now';
+                $('heroPlace').textContent = morningLabel;
+                $('heroCountdown').textContent = 'Handoff at ' + formatClock(todayAsg.handoffTime);
+                const bits = ['Morning at ' + morningLabel, afternoonLabel + ' after ' + formatClock(todayAsg.handoffTime)];
+                if (schoolToday) bits.push('TUSD: ' + schoolToday);
+                if (todayAsg.note) bits.push(todayAsg.note);
+                $('heroSub').textContent = bits.join(' · ');
+                progressWrap.hidden = true;
+                progressBar.style.width = '0%';
+
+                const c = parentColor(todayAsg.afternoonParent);
+                $('heroNextPlace').innerHTML =
+                    `<span class="stat-dot" style="background:${c}"></span><span></span>`;
+                $('heroNextPlace').querySelector('span:last-child').textContent = afternoonLabel;
+                $('heroNextWhen').textContent = 'Starting this afternoon · ' + formatClock(todayAsg.handoffTime);
+                const nextStay = stayBlockAround(map, today);
+                if (nextStay) {
+                    const nextLen = daysBetweenInclusive(nextStay.start, nextStay.end);
+                    $('heroNextDetail').textContent =
+                        nextLen === 1
+                            ? 'Tonight only'
+                            : nextLen + ' days there · through ' + formatDayShort(nextStay.end);
+                } else {
+                    $('heroNextDetail').textContent = '';
+                }
+                return;
+            }
+
             if (stay) {
-                hero.dataset.parent = stay.parent;
-                const color = data.parents[stay.parent]?.color;
-                if (color) {
-                    hero.style.background = stay.parent === 'dad'
-                        ? `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 65%, #1a1a2e))`
-                        : `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 65%, #0a2a22))`;
-                } else hero.style.background = '';
+                paintHeroParent(hero, stay.parent);
 
                 const place = shortLabel(assignmentLabel(stay.asg), stay.parent);
                 const fullLabel = data.parents[stay.parent]?.label || place;
@@ -1824,10 +2057,8 @@
                     btn.className = 'week-day';
                     btn.dataset.date = iso;
                     if (iso === today) btn.classList.add('today');
-                    if (asg) {
-                        btn.classList.add('has-parent');
-                        paintBackground(btn, asg.parent);
-                    } else btn.classList.add('week-empty');
+                    if (asg) paintDayTile(btn, asg);
+                    else btn.classList.add('week-empty');
 
                     const dow = document.createElement('div');
                     dow.className = 'week-dow';
@@ -1837,20 +2068,20 @@
                     const dateEl = document.createElement('div');
                     dateEl.className = 'week-date';
                     dateEl.textContent = String(d.getDate());
-                    if (asg) {
-                        const ini = document.createElement('span');
-                        ini.className = 'parent-initial';
-                        ini.textContent = parentInitial(asg.parent);
-                        dateEl.appendChild(ini);
-                    }
+                    appendInitials(dateEl, asg);
                     btn.appendChild(dateEl);
 
                     const place = document.createElement('div');
                     place.className = 'week-place';
-                    place.textContent = asg ? shortLabel(assignmentLabel(asg), asg.parent) : 'Open';
+                    place.textContent = asg ? splitLabel(asg) : 'Open';
                     btn.appendChild(place);
 
-                    if (asg && (asg.startTime || asg.endTime)) {
+                    if (asg && asg.isTransition && asg.handoffTime) {
+                        const t = document.createElement('div');
+                        t.className = 'week-time';
+                        t.textContent = formatClock(asg.handoffTime);
+                        btn.appendChild(t);
+                    } else if (asg && (asg.startTime || asg.endTime)) {
                         const t = document.createElement('div');
                         t.className = 'week-time';
                         t.textContent = [asg.startTime, asg.endTime].filter(Boolean).join('–');
@@ -1913,31 +2144,27 @@
                 if (iso === today) cell.classList.add('today');
 
                 const asg = map[iso];
-                if (asg) {
-                    cell.classList.add('has-parent');
-                    paintBackground(cell, asg.parent);
-                    if (asg.startTime || asg.endTime) cell.classList.add('partial');
-                }
+                if (asg) paintDayTile(cell, asg);
 
                 const num = document.createElement('div');
                 num.className = 'day-num';
                 num.textContent = String(c.day);
-                if (asg) {
-                    const ini = document.createElement('span');
-                    ini.className = 'parent-initial';
-                    ini.textContent = parentInitial(asg.parent);
-                    num.appendChild(ini);
-                }
+                appendInitials(num, asg);
                 cell.appendChild(num);
 
                 const place = document.createElement('div');
                 place.className = 'day-place';
                 place.textContent = asg
-                    ? shortLabel(assignmentLabel(asg), asg.parent)
+                    ? splitLabel(asg)
                     : (c.outside ? '' : 'Open');
                 cell.appendChild(place);
 
-                if (asg && (asg.startTime || asg.endTime)) {
+                if (asg && asg.isTransition && asg.handoffTime) {
+                    const t = document.createElement('div');
+                    t.className = 'day-time';
+                    t.textContent = formatClock(asg.handoffTime);
+                    cell.appendChild(t);
+                } else if (asg && (asg.startTime || asg.endTime)) {
                     const t = document.createElement('div');
                     t.className = 'day-time';
                     t.textContent = [asg.startTime, asg.endTime].filter(Boolean).join('–');
@@ -2022,8 +2249,14 @@
                     if (iso === today) btn.classList.add('today');
                     if (asg) {
                         btn.classList.add('has-parent');
-                        btn.style.background = data.parents[asg.parent]?.color || '#555';
-                        btn.title = shortLabel(assignmentLabel(asg), asg.parent) + ' (' + parentInitial(asg.parent) + ')';
+                        if (asg.isTransition) {
+                            btn.classList.add('split');
+                            paintSplitBackground(btn, asg.morningParent, asg.afternoonParent);
+                            btn.title = splitLabel(asg);
+                        } else {
+                            btn.style.background = parentColor(asg.parent);
+                            btn.title = shortLabel(assignmentLabel(asg), asg.parent) + ' (' + parentInitial(asg.parent) + ')';
+                        }
                     }
                     if (schoolLabel(iso)) btn.classList.add('no-school');
                     btn.addEventListener('click', () => onDayClick(iso));
@@ -2107,6 +2340,10 @@
 
             nextBlocks.sort((a, b) => compareISO(a.startDate, b.startDate) || compareISO(a.endDate || a.startDate, b.endDate || b.startDate));
             data.blocks = nextBlocks;
+            if (!data.handoffs) data.handoffs = {};
+            if (!parent) {
+                for (const iso of covered) delete data.handoffs[iso];
+            }
             setDirty(true);
             if (!opts.skipRender) {
                 clearSelection(false);
@@ -2133,6 +2370,15 @@
             $('editNote').value = sample?.note || '';
             $('pickMom').classList.toggle('active', editParent === 'mom');
             $('pickDad').classList.toggle('active', editParent === 'dad');
+            const raw = rawDayMap();
+            const canHandoff = r.start === r.end && canHouseChange(r.start, raw);
+            $('handoffFields').hidden = !canHandoff;
+            if (canHandoff) {
+                const ov = handoffOverride(r.start);
+                $('editFullDay').checked = !!(ov && ov.fullDay);
+                $('editHandoffTime').value = (ov && ov.time) || sample?.handoffTime || defaultHandoffTime(r.start);
+                $('editHandoffTime').disabled = $('editFullDay').checked;
+            }
             $('editModal').classList.add('show');
         }
 
@@ -2512,7 +2758,31 @@
                         note: b.note || '',
                     })).filter((b) => b.startDate)
                     : [],
+                handoffs: normalizeHandoffs(raw.handoffs),
             };
+        }
+
+        function icsDate(iso) { return String(iso).replace(/-/g, ''); }
+
+        function icsDateTime(iso, hhmm) {
+            const [h, m] = String(hhmm || '00:00').split(':');
+            return icsDate(iso) + 'T' + String(h).padStart(2, '0') + String(m).padStart(2, '0') + '00';
+        }
+
+        function pushIcsEvent(lines, stamp, ev) {
+            lines.push('BEGIN:VEVENT');
+            lines.push('UID:' + (ev.uid || uid()) + '@custody-calendar');
+            lines.push('DTSTAMP:' + stamp);
+            if (ev.allDay) {
+                lines.push('DTSTART;VALUE=DATE:' + icsDate(ev.start));
+                lines.push('DTEND;VALUE=DATE:' + icsDate(ev.endExclusive));
+            } else {
+                lines.push('DTSTART:' + icsDateTime(ev.start, ev.startTime));
+                lines.push('DTEND:' + icsDateTime(ev.end, ev.endTime));
+            }
+            lines.push('SUMMARY:' + escapeIcs(ev.summary));
+            if (ev.description) lines.push('DESCRIPTION:' + escapeIcs(ev.description));
+            lines.push('END:VEVENT');
         }
 
         function buildIcs() {
@@ -2521,22 +2791,59 @@
                 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Casas Kids Calendar',
             ];
             const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-            for (const b of data.blocks) {
-                if (!b.startDate || !b.parent) continue;
-                const label = data.parents[b.parent]?.label || b.parent;
-                const endExclusive = addDaysISO(b.endDate || b.startDate, 1);
-                let description = label;
-                if (b.startTime || b.endTime) description += ` (${[b.startTime, b.endTime].filter(Boolean).join('–')})`;
-                if (b.note) description += '\\n' + String(b.note).replace(/\n/g, '\\n');
-                lines.push('BEGIN:VEVENT');
-                lines.push('UID:' + (b.id || uid()) + '@custody-calendar');
-                lines.push('DTSTAMP:' + stamp);
-                lines.push('DTSTART;VALUE=DATE:' + b.startDate.replace(/-/g, ''));
-                lines.push('DTEND;VALUE=DATE:' + endExclusive.replace(/-/g, ''));
-                lines.push('SUMMARY:' + escapeIcs(label));
-                lines.push('DESCRIPTION:' + escapeIcs(description));
-                lines.push('END:VEVENT');
+            const map = dayMap();
+            const dates = Object.keys(map).sort(compareISO);
+            let run = null;
+            const flushRun = () => {
+                if (!run) return;
+                const label = data.parents[run.parent]?.label || run.parent;
+                pushIcsEvent(lines, stamp, {
+                    uid: run.uid,
+                    allDay: true,
+                    start: run.start,
+                    endExclusive: addDaysISO(run.end, 1),
+                    summary: label,
+                    description: label,
+                });
+                run = null;
+            };
+            for (const iso of dates) {
+                const asg = map[iso];
+                if (!asg) continue;
+                if (asg.isTransition) {
+                    flushRun();
+                    const am = data.parents[asg.morningParent]?.label || asg.morningParent;
+                    const pm = data.parents[asg.afternoonParent]?.label || asg.afternoonParent;
+                    const handoff = asg.handoffTime || defaultHandoffTime(iso);
+                    const next = addDaysISO(iso, 1);
+                    pushIcsEvent(lines, stamp, {
+                        uid: (asg.blockId || uid()) + '-am',
+                        start: iso,
+                        startTime: '00:00',
+                        end: iso,
+                        endTime: handoff,
+                        summary: am,
+                        description: am + ' until ' + formatClock(handoff),
+                    });
+                    pushIcsEvent(lines, stamp, {
+                        uid: (asg.blockId || uid()) + '-pm',
+                        start: iso,
+                        startTime: handoff,
+                        end: next,
+                        endTime: '00:00',
+                        summary: pm,
+                        description: pm + ' from ' + formatClock(handoff),
+                    });
+                    continue;
+                }
+                if (run && run.parent === asg.parent && addDaysISO(run.end, 1) === iso) {
+                    run.end = iso;
+                } else {
+                    flushRun();
+                    run = { parent: asg.parent, start: iso, end: iso, uid: asg.blockId };
+                }
             }
+            flushRun();
             lines.push('END:VCALENDAR');
             return lines.join('\r\n') + '\r\n';
         }
@@ -2886,8 +3193,12 @@
             const r = selectedRange();
             if (r) assignRange(r.start, r.end, null);
         });
+        $('rangeSplitToggle').addEventListener('click', toggleSplitDay);
         $('rangeCancel').addEventListener('click', () => clearSelection());
         $('rangeDetails').addEventListener('click', openEditModal);
+        $('editFullDay').addEventListener('change', () => {
+            $('editHandoffTime').disabled = $('editFullDay').checked;
+        });
 
         $('pickMom').addEventListener('click', () => {
             editParent = 'mom';
@@ -2902,11 +3213,21 @@
         $('editApply').addEventListener('click', () => {
             const r = selectedRange();
             if (!r) return;
+            const handoffIso = (r.start === r.end && !$('handoffFields').hidden) ? r.start : null;
+            let handoffValue = null;
+            if (handoffIso) {
+                if ($('editFullDay').checked) handoffValue = { fullDay: true };
+                else if ($('editHandoffTime').value) handoffValue = { time: $('editHandoffTime').value };
+            }
             assignRange(r.start, r.end, editParent, {
                 startTime: $('editStartTime').value || null,
                 endTime: $('editEndTime').value || null,
                 note: $('editNote').value.trim(),
             });
+            if (handoffIso) {
+                setHandoffOverride(handoffIso, handoffValue);
+                renderAll();
+            }
             closeEditModal();
         });
         $('editClear').addEventListener('click', () => {
