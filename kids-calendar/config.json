@@ -1,10 +1,15 @@
 {
   "version": 1,
-  "owner": "",
-  "repo": "",
+  "owner": "davidcasas82",
+  "repo": "custody-calendar",
   "branch": "main",
   "dataPath": "custody_data.json",
   "icsPath": "custody.ics",
   "appTitle": "Casas Kids Calendar",
-  "crypto": null
+  "crypto": {
+    "salt": "hfTOj8DXvpIsOm/0FQm2uw==",
+    "iv": "eP0OU2uCv0THbJdY",
+    "ciphertext": "ajWNopAFw0QdYnR6tJZCfV9VPUMTIo3e4swdnS+s7WLoVdsd/tbQOSQ90WTRBLnllu66gi/pzPeZBR4hgbdgSCpZddnDWnm91IU4aGJ6nUyQeisYPJsnEb3oHeSwHibMBTXLk3ZCDbRfXIkyjA==",
+    "iterations": 250000
+  }
 }
