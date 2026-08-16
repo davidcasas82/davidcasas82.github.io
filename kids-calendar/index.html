@@ -209,6 +209,13 @@
             border-color: rgba(232, 200, 120, 0.45); color: #e8c878;
             background: rgba(232, 200, 120, 0.08);
         }
+        .text-btn {
+            width: auto;
+            min-width: 44px;
+            padding: 0 12px;
+            font-size: 13px;
+            font-weight: 750;
+        }
 
         .dash-main { max-width: var(--content-max); margin: 0 auto; padding: 18px 16px 0; }
         @media (min-width: 900px) { .dash-main { padding: 22px 24px 0; } }
@@ -850,11 +857,7 @@
                         <div class="live-clock-time" id="clockTime">—</div>
                         <div class="live-clock-date" id="clockDate">—</div>
                     </div>
-                    <button type="button" class="icon-btn edit-only" id="undoBtn" title="Undo" aria-label="Undo" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.2L3 7"/>
-                        </svg>
-                    </button>
+                    <button type="button" class="icon-btn text-btn edit-only" id="undoBtn" disabled>Undo</button>
                     <button type="button" class="icon-btn" id="reloadBtn" title="Refresh" aria-label="Refresh">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>
