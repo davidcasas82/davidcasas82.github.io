@@ -1082,7 +1082,8 @@
                     Pick a repeating pattern. It fills the date range as ordinary days — you can still edit one-offs on the board.
                 </p>
                 <div class="recipe-row" role="tablist" aria-label="Schedule pattern">
-                    <button type="button" class="recipe-chip active" data-recipe="handoffs">Two handoffs / week</button>
+                    <button type="button" class="recipe-chip active" data-recipe="stay">Leave and return</button>
+                    <button type="button" class="recipe-chip" data-recipe="handoffs">Two handoffs / week</button>
                     <button type="button" class="recipe-chip" data-recipe="weekon">Week on / week off</button>
                     <button type="button" class="recipe-chip" data-recipe="weekend">Every other weekend</button>
                     <button type="button" class="recipe-chip" data-recipe="samenights">Same nights every week</button>
@@ -1107,7 +1108,33 @@
                     </div>
                 </div>
 
-                <div id="panelHandoffs">
+                <div id="panelStay">
+                    <div class="field">
+                        <label>They leave</label>
+                        <div class="handoff-row">
+                            <select id="stayLeaveDow"></select>
+                            <select id="stayFrom"></select>
+                            <select id="stayTo"></select>
+                        </div>
+                        <div class="field-hint">Last morning at the first house, then the whole stay at the other house</div>
+                    </div>
+                    <div class="field">
+                        <label>They return</label>
+                        <div class="handoff-row">
+                            <select id="stayReturnDow"></select>
+                            <select id="stayReturnWeek">
+                                <option value="next">the following week</option>
+                                <option value="same">the same week</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="stayAnchor">A date of the first leave day</label>
+                        <input type="date" id="stayAnchor">
+                    </div>
+                </div>
+
+                <div id="panelHandoffs" class="panel-hidden">
                     <div class="field">
                         <label>First exchange</label>
                         <div class="handoff-row">
@@ -1115,7 +1142,7 @@
                             <select id="handoff1From"></select>
                             <select id="handoff1To"></select>
                         </div>
-                        <div class="field-hint">Outgoing last morning → new house after school</div>
+                        <div class="field-hint">Same two weekdays every week</div>
                     </div>
                     <div class="field">
                         <label>Second exchange</label>
@@ -1265,7 +1292,8 @@
         let dirty = false;
         let selectedDates = new Set();
         let editParent = 'mom';
-        let recipe = localStorage.getItem(RECIPE_KEY) || 'handoffs';
+        let recipe = localStorage.getItem(RECIPE_KEY) || 'stay';
+        if (recipe === 'handoffs' && !localStorage.getItem(RECIPE_KEY + '.keep')) recipe = 'stay';
         let everyDays = new Set([3, 4, 5, 6, 0, 1]);
         let everyParent = 'dad';
         let weekOnParent = 'dad';
@@ -2529,6 +2557,28 @@
             ];
         }
 
+        function ensureStaySelects() {
+            const days = ScheduleEntry.DOW_SHORT.map((label, value) => ({ value, label }));
+            const houses = houseOptions();
+            fillSelect($('stayLeaveDow'), days, $('stayLeaveDow').options.length ? $('stayLeaveDow').value : 1);
+            fillSelect($('stayReturnDow'), days, $('stayReturnDow').options.length ? $('stayReturnDow').value : 3);
+            fillSelect($('stayFrom'), houses, $('stayFrom').value || 'dad');
+            fillSelect($('stayTo'), houses, $('stayTo').value || 'mom');
+            if (!$('stayReturnWeek').value) $('stayReturnWeek').value = 'next';
+            if (!$('stayAnchor').value && $('patternStart').value) $('stayAnchor').value = $('patternStart').value;
+        }
+
+        function currentStay() {
+            return {
+                leaveDow: Number($('stayLeaveDow').value),
+                returnDow: Number($('stayReturnDow').value),
+                from: $('stayFrom').value,
+                to: $('stayTo').value,
+                returnWeek: $('stayReturnWeek').value || 'next',
+                anchor: $('stayAnchor').value || $('patternStart').value,
+            };
+        }
+
         function ensureHandoffSelects() {
             const days = ScheduleEntry.DOW_SHORT.map((label, value) => ({ value, label }));
             fillSelect($('handoff1Dow'), days, $('handoff1Dow').options.length ? $('handoff1Dow').value : 1);
@@ -2570,11 +2620,13 @@
         }
 
         function setRecipe(next) {
-            recipe = next || 'handoffs';
+            recipe = next || 'stay';
             localStorage.setItem(RECIPE_KEY, recipe);
+            if (recipe === 'handoffs') localStorage.setItem(RECIPE_KEY + '.keep', '1');
             document.querySelectorAll('[data-recipe]').forEach((b) => {
                 b.classList.toggle('active', b.dataset.recipe === recipe);
             });
+            $('panelStay').classList.toggle('panel-hidden', recipe !== 'stay');
             $('panelHandoffs').classList.toggle('panel-hidden', recipe !== 'handoffs');
             $('panelWeekOn').classList.toggle('panel-hidden', recipe !== 'weekon');
             $('panelWeekend').classList.toggle('panel-hidden', recipe !== 'weekend');
@@ -2591,6 +2643,9 @@
             const skipSchool = $('patternSkipSchool').checked;
             const conflict = patternConflictMode();
             const shared = { start, end, skipSchool, conflict };
+            if (recipe === 'stay') {
+                return { ...shared, mode: 'stay', ...currentStay() };
+            }
             if (recipe === 'handoffs') {
                 return { ...shared, mode: 'handoffs', handoffs: currentHandoffs() };
             }
@@ -2652,7 +2707,11 @@
             return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
 
-        function overnightForPreview(dow) {
+        function overnightForPreview(dow, offset) {
+            if (recipe === 'stay') {
+                const s = currentStay();
+                return ScheduleEntry.overnightFromStay(offset || 0, s.leaveDow, s.returnDow, s.from, s.to, s.returnWeek);
+            }
             if (recipe === 'handoffs') return ScheduleEntry.overnightFromHandoffs(dow, currentHandoffs());
             if (recipe === 'samenights') return everyDays.has(dow) ? everyParent : (everyParent === 'mom' ? 'dad' : 'mom');
             if (recipe === 'custom') return customNights[dow];
@@ -2669,12 +2728,13 @@
             if (!strip) return;
             strip.hidden = false;
             strip.innerHTML = '';
-            const days = 7;
+            const days = recipe === 'stay' || recipe === 'cycle223' || recipe === 'weekon' ? 14 : 7;
             for (let d = 0; d < days; d++) {
                 const cell = document.createElement('div');
                 cell.className = 'preview-day';
-                const parent = overnightForPreview(d);
-                const next = overnightForPreview((d + 1) % 7);
+                const weekday = recipe === 'stay' ? (currentStay().leaveDow + d) % 7 : d % 7;
+                const parent = overnightForPreview(weekday, d);
+                const next = overnightForPreview((weekday + 1) % 7, d + 1);
                 const split = parent && next && parent !== next;
                 if (!parent) {
                     cell.classList.add('open');
@@ -2683,11 +2743,11 @@
                 } else {
                     cell.style.background = parentColor(parent);
                 }
-                const dow = document.createElement('div');
-                dow.textContent = ScheduleEntry.DOW_SHORT[d];
+                const label = document.createElement('div');
+                label.textContent = ScheduleEntry.DOW_SHORT[weekday];
                 const who = document.createElement('div');
                 who.textContent = !parent ? '—' : (split ? parentInitial(parent) + '→' + parentInitial(next) : parentInitial(parent));
-                cell.appendChild(dow);
+                cell.appendChild(label);
                 cell.appendChild(who);
                 strip.appendChild(cell);
             }
@@ -2710,7 +2770,13 @@
             const momL = escapeHtml(houseLabel('mom'));
             const dadL = escapeHtml(houseLabel('dad'));
             const lines = [];
-            if (recipe === 'handoffs') {
+            if (recipe === 'stay') {
+                const s = currentStay();
+                const when = s.returnWeek === 'same' ? 'same week' : 'following week';
+                lines.push(
+                    `<strong>Leave and return</strong> — ${ScheduleEntry.DOW_SHORT[s.leaveDow]} ${escapeHtml(houseLabel(s.from))} → ${escapeHtml(houseLabel(s.to))}, back ${ScheduleEntry.DOW_SHORT[s.returnDow]} ${when}.`
+                );
+            } else if (recipe === 'handoffs') {
                 const [a, b] = currentHandoffs();
                 lines.push(
                     `<strong>Two exchanges</strong> — ${ScheduleEntry.DOW_SHORT[a.dow]} ${escapeHtml(houseLabel(a.from))} → ${escapeHtml(houseLabel(a.to))}, ` +
@@ -2780,6 +2846,7 @@
             if ($('patternAnchor') && !$('patternAnchor').value && $('patternStart').value) {
                 $('patternAnchor').value = $('patternStart').value;
             }
+            ensureStaySelects();
             ensureHandoffSelects();
             buildWeekdayGrid('weekdayGridEvery', () => everyDays, (s) => { everyDays = s; });
             syncWeekdayGrid('weekdayGridEvery', everyDays);
@@ -3391,8 +3458,9 @@
         document.querySelectorAll('[data-recipe]').forEach((b) => {
             b.addEventListener('click', () => setRecipe(b.dataset.recipe));
         });
-        ['handoff1Dow', 'handoff1From', 'handoff1To', 'handoff2Dow', 'handoff2From', 'handoff2To'].forEach((id) => {
-            $(id).addEventListener('change', updatePatternPreview);
+        ['handoff1Dow', 'handoff1From', 'handoff1To', 'handoff2Dow', 'handoff2From', 'handoff2To',
+            'stayLeaveDow', 'stayFrom', 'stayTo', 'stayReturnDow', 'stayReturnWeek', 'stayAnchor'].forEach((id) => {
+            if ($(id)) $(id).addEventListener('change', updatePatternPreview);
         });
         $('everyPickMom').addEventListener('click', () => { everyParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
         $('everyPickDad').addEventListener('click', () => { everyParent = 'dad'; syncParentPicks(); updatePatternPreview(); });

@@ -284,6 +284,23 @@
     return null;
   }
 
+  /** Days from leave weekday to return weekday; next week adds 7. */
+  function stayLengthDays(leaveDow, returnDow, returnWeek) {
+    let span = (returnDow - leaveDow + 7) % 7;
+    if (returnWeek === 'next') span += 7;
+    if (span === 0) span = returnWeek === 'next' ? 14 : 7;
+    return span;
+  }
+
+  function overnightFromStay(diffDays, leaveDow, returnDow, from, to, returnWeek) {
+    const stay = stayLengthDays(leaveDow, returnDow, returnWeek);
+    const cycle = stay + ((leaveDow - returnDow + 7) % 7 || 7);
+    const slot = ((diffDays % cycle) + cycle) % cycle;
+    if (slot === 0) return from;
+    if (slot < stay) return to;
+    return from;
+  }
+
   /**
    * @param {object} p
    * @param {(iso:string)=>any} dayMapFn - returns assignment or null
@@ -326,7 +343,28 @@
       return ((diff % 2) + 2) % 2 === 0;
     }
 
-    if (mode === 'handoffs') {
+    if (mode === 'stay') {
+      const leaveDow = Number(p.leaveDow);
+      const returnDow = Number(p.returnDow);
+      const from = p.from === 'mom' ? 'mom' : 'dad';
+      const to = p.to === 'mom' ? 'mom' : 'dad';
+      const returnWeek = p.returnWeek === 'same' ? 'same' : 'next';
+      if (from === to) return { invalid: 'Leave and return must go to different houses.', byParent, skippedExisting, skippedSchool };
+      if (!(leaveDow >= 0 && leaveDow <= 6 && returnDow >= 0 && returnDow <= 6)) {
+        return { invalid: 'Pick leave and return weekdays.', byParent, skippedExisting, skippedSchool };
+      }
+      const stay = stayLengthDays(leaveDow, returnDow, returnWeek);
+      const after = (leaveDow - returnDow + 7) % 7 || 7;
+      const cycle = stay + after;
+      let origin = dateFromISO(p.anchor || start);
+      const shift = (origin.getDay() - leaveDow + 7) % 7;
+      origin.setDate(origin.getDate() - shift);
+      const originTime = origin.getTime();
+      eachDate(start, end, (iso) => {
+        const diff = Math.round((dateFromISO(iso).getTime() - originTime) / (24 * 60 * 60 * 1000));
+        pushDay(iso, overnightFromStay(diff, leaveDow, returnDow, from, to, returnWeek));
+      });
+    } else if (mode === 'handoffs') {
       const cuts = (p.handoffs || []).filter((h) => h && (h.from === 'mom' || h.from === 'dad') && (h.to === 'mom' || h.to === 'dad') && h.from !== h.to && h.dow >= 0 && h.dow <= 6);
       if (cuts.length < 2) return { invalid: 'Set two different exchange days.', byParent, skippedExisting, skippedSchool };
       if (cuts[0].dow === cuts[1].dow) return { invalid: 'Exchange days must be different weekdays.', byParent, skippedExisting, skippedSchool };
@@ -386,6 +424,8 @@
     interpretNaturalLanguage,
     expandPattern,
     overnightFromHandoffs,
+    overnightFromStay,
+    stayLengthDays,
     expandDowRange,
     parseDaySpan,
     formatDays,
