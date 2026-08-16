@@ -1082,7 +1082,7 @@
                     Pick a repeating pattern. It fills the date range as ordinary days — you can still edit one-offs on the board.
                 </p>
                 <div class="recipe-row" role="tablist" aria-label="Schedule pattern">
-                    <button type="button" class="recipe-chip active" data-recipe="stay">Leave and return</button>
+                    <button type="button" class="recipe-chip active" data-recipe="stay">Switch over / back</button>
                     <button type="button" class="recipe-chip" data-recipe="handoffs">Two handoffs / week</button>
                     <button type="button" class="recipe-chip" data-recipe="weekon">Week on / week off</button>
                     <button type="button" class="recipe-chip" data-recipe="weekend">Every other weekend</button>
@@ -1110,16 +1110,16 @@
 
                 <div id="panelStay">
                     <div class="field">
-                        <label>They leave</label>
+                        <label>They switch over</label>
                         <div class="handoff-row">
                             <select id="stayLeaveDow"></select>
                             <select id="stayFrom"></select>
                             <select id="stayTo"></select>
                         </div>
-                        <div class="field-hint">Last morning at the first house, then the whole stay at the other house</div>
+                        <div class="field-hint">Last morning at the first house, then they stay at the other house until the next switch</div>
                     </div>
                     <div class="field">
-                        <label>They return</label>
+                        <label>They switch back</label>
                         <div class="handoff-row">
                             <select id="stayReturnDow"></select>
                             <select id="stayReturnWeek">
@@ -1129,7 +1129,7 @@
                         </div>
                     </div>
                     <div class="field">
-                        <label for="stayAnchor">A date of the first leave day</label>
+                        <label for="stayAnchor">First switch-over date</label>
                         <input type="date" id="stayAnchor">
                     </div>
                 </div>
@@ -2774,7 +2774,7 @@
                 const s = currentStay();
                 const when = s.returnWeek === 'same' ? 'same week' : 'following week';
                 lines.push(
-                    `<strong>Leave and return</strong> — ${ScheduleEntry.DOW_SHORT[s.leaveDow]} ${escapeHtml(houseLabel(s.from))} → ${escapeHtml(houseLabel(s.to))}, back ${ScheduleEntry.DOW_SHORT[s.returnDow]} ${when}.`
+                    `<strong>Switch over / back</strong> — ${ScheduleEntry.DOW_SHORT[s.leaveDow]} ${escapeHtml(houseLabel(s.from))} → ${escapeHtml(houseLabel(s.to))}, switch back ${ScheduleEntry.DOW_SHORT[s.returnDow]} ${when}.`
                 );
             } else if (recipe === 'handoffs') {
                 const [a, b] = currentHandoffs();

@@ -349,9 +349,9 @@
       const from = p.from === 'mom' ? 'mom' : 'dad';
       const to = p.to === 'mom' ? 'mom' : 'dad';
       const returnWeek = p.returnWeek === 'same' ? 'same' : 'next';
-      if (from === to) return { invalid: 'Leave and return must go to different houses.', byParent, skippedExisting, skippedSchool };
+      if (from === to) return { invalid: 'Switch-over and switch-back must be different houses.', byParent, skippedExisting, skippedSchool };
       if (!(leaveDow >= 0 && leaveDow <= 6 && returnDow >= 0 && returnDow <= 6)) {
-        return { invalid: 'Pick leave and return weekdays.', byParent, skippedExisting, skippedSchool };
+        return { invalid: 'Pick switch-over and switch-back weekdays.', byParent, skippedExisting, skippedSchool };
       }
       const stay = stayLengthDays(leaveDow, returnDow, returnWeek);
       const after = (leaveDow - returnDow + 7) % 7 || 7;
