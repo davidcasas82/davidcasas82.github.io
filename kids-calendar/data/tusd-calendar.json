@@ -1,0 +1,79 @@
+{
+  "source": "https://www.tustin.k12.ca.us/about-us/calendars-school-year",
+  "district": "Tustin Unified School District",
+  "note": "Board-approved instructional calendars. Non-student days only (holidays, recesses, staff/teacher days). Board meetings omitted.",
+  "years": [
+    {
+      "id": "2025-26",
+      "label": "2025–26 school year",
+      "firstDay": "2025-08-13",
+      "lastDay": "2026-05-29",
+      "breaks": [
+        { "name": "Fall Recess", "start": "2025-11-24", "end": "2025-11-28" },
+        { "name": "Winter Recess", "start": "2025-12-22", "end": "2026-01-02" },
+        { "name": "Spring Recess", "start": "2026-03-30", "end": "2026-04-03" }
+      ],
+      "nonStudentDays": [
+        { "date": "2025-08-08", "name": "Staff Development (no students)" },
+        { "date": "2025-08-11", "name": "Staff Development (no students)" },
+        { "date": "2025-08-12", "name": "Teacher Work Day (no students)" },
+        { "date": "2025-09-01", "name": "Labor Day" },
+        { "date": "2025-10-31", "name": "Staff Development (no students)" },
+        { "date": "2025-11-11", "name": "Veterans Day" },
+        { "date": "2026-01-05", "name": "Teacher Work Day (no students)" },
+        { "date": "2026-01-19", "name": "MLK Day" },
+        { "date": "2026-02-09", "name": "Lincoln's Day" },
+        { "date": "2026-02-16", "name": "Washington's Day" },
+        { "date": "2026-05-25", "name": "Memorial Day" }
+      ]
+    },
+    {
+      "id": "2026-27",
+      "label": "2026–27 school year",
+      "firstDay": "2026-08-13",
+      "lastDay": "2027-05-28",
+      "breaks": [
+        { "name": "Fall Recess", "start": "2026-11-23", "end": "2026-11-27" },
+        { "name": "Winter Recess", "start": "2026-12-21", "end": "2027-01-01" },
+        { "name": "Spring Recess", "start": "2027-03-22", "end": "2027-03-26" }
+      ],
+      "nonStudentDays": [
+        { "date": "2026-08-10", "name": "Staff Development (no students)" },
+        { "date": "2026-08-11", "name": "Staff Development (no students)" },
+        { "date": "2026-08-12", "name": "Teacher Work Day (no students)" },
+        { "date": "2026-09-07", "name": "Labor Day" },
+        { "date": "2026-10-30", "name": "Staff Development (no students)" },
+        { "date": "2026-11-11", "name": "Veterans Day" },
+        { "date": "2027-01-04", "name": "Teacher Work Day (no students)" },
+        { "date": "2027-01-18", "name": "MLK Day" },
+        { "date": "2027-02-12", "name": "Lincoln's Day" },
+        { "date": "2027-02-15", "name": "Washington's Day" },
+        { "date": "2027-05-31", "name": "Memorial Day" }
+      ]
+    },
+    {
+      "id": "2027-28",
+      "label": "2027–28 school year",
+      "firstDay": "2027-08-12",
+      "lastDay": "2028-05-26",
+      "breaks": [
+        { "name": "Fall Recess", "start": "2027-11-22", "end": "2027-11-26" },
+        { "name": "Winter Recess", "start": "2027-12-20", "end": "2027-12-31" },
+        { "name": "Spring Recess", "start": "2028-03-20", "end": "2028-03-24" }
+      ],
+      "nonStudentDays": [
+        { "date": "2027-08-09", "name": "Staff Development (no students)" },
+        { "date": "2027-08-10", "name": "Staff Development (no students)" },
+        { "date": "2027-08-11", "name": "Teacher Work Day (no students)" },
+        { "date": "2027-09-06", "name": "Labor Day" },
+        { "date": "2027-10-29", "name": "Staff Development (no students)" },
+        { "date": "2027-11-11", "name": "Veterans Day" },
+        { "date": "2028-01-03", "name": "Teacher Work Day (no students)" },
+        { "date": "2028-01-17", "name": "MLK Day" },
+        { "date": "2028-02-14", "name": "Lincoln's Day" },
+        { "date": "2028-02-21", "name": "Washington's Day" },
+        { "date": "2028-05-29", "name": "Memorial Day" }
+      ]
+    }
+  ]
+}

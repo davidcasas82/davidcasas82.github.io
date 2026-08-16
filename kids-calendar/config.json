@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "owner": "",
+  "repo": "",
+  "branch": "main",
+  "dataPath": "custody_data.json",
+  "icsPath": "custody.ics",
+  "appTitle": "Casas Kids Calendar",
+  "crypto": null
+}

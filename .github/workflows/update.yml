@@ -44,6 +44,11 @@ jobs:
           cp index.html .nojekyll _site/
           cp assets/styles.css assets/app.js _site/assets/
           cp data/catalog.json _site/data/
+          # Static apps hosted as subpaths (not rebuilt by the catalog)
+          if [ -d kids-calendar ]; then
+            mkdir -p _site/kids-calendar
+            cp -R kids-calendar/. _site/kids-calendar/
+          fi
 
       - uses: actions/configure-pages@v5
 

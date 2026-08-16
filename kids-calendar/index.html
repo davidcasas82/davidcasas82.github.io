@@ -1,0 +1,3054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f1412">
+    <meta name="color-scheme" content="dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Casas Kids Calendar</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0f1412;
+            --bg-elevated: #161c19;
+            --surface: #1c2420;
+            --surface-2: #232c28;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --text: #f2f4f3;
+            --text-2: #a8b3ad;
+            --text-3: #6d7a74;
+            --teal: #3dba9a;
+            --teal-dim: rgba(61, 186, 154, 0.14);
+            --mom: #2f9e86;
+            --dad: #6b7cff;
+            --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 12px 40px rgba(0,0,0,0.28);
+            --radius: 20px;
+            --radius-sm: 14px;
+            --content-max: 1280px;
+            --safe-b: env(safe-area-inset-bottom, 0px);
+            --safe-t: env(safe-area-inset-top, 0px);
+            --range-bar-h: 72px;
+            --status-h: 48px;
+        }
+
+        html { -webkit-text-size-adjust: 100%; height: 100%; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 16px;
+            line-height: 1.4;
+            min-height: 100%;
+            min-height: 100dvh;
+            -webkit-font-smoothing: antialiased;
+            background-image:
+                radial-gradient(1200px 600px at 10% -10%, rgba(47, 158, 134, 0.12), transparent 55%),
+                radial-gradient(900px 500px at 100% 0%, rgba(107, 124, 255, 0.1), transparent 50%);
+            background-attachment: fixed;
+        }
+
+        body.app-unlocked { padding-bottom: calc(88px + var(--safe-b)); }
+        body.kiosk-mode { padding-bottom: calc(16px + var(--safe-b)); }
+        body.kiosk-mode .action-bar,
+        body.kiosk-mode .range-bar-slot,
+        body.kiosk-mode .edit-only { display: none !important; }
+        body.kiosk-mode .week-day,
+        body.kiosk-mode .day-cell,
+        body.kiosk-mode .mini-day { cursor: default; pointer-events: none; }
+
+        button, input, select, textarea { font: inherit; color: inherit; }
+
+        /* ── Lock ── */
+        #lockScreen {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: calc(24px + var(--safe-t)) 16px calc(24px + var(--safe-b));
+        }
+        #lockScreen.hidden { display: none; }
+
+        .lock-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px 26px 28px;
+            box-shadow: var(--shadow-card);
+            text-align: center;
+        }
+        .lock-mark {
+            width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 18px;
+            background: var(--teal-dim); color: var(--teal);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .lock-mark svg { width: 30px; height: 30px; }
+        .lock-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+        .lock-sub { font-size: 15px; color: var(--text-2); margin-bottom: 22px; }
+        .lock-field { text-align: left; margin-bottom: 12px; }
+        .lock-field label {
+            display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+            text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;
+        }
+        .lock-field input {
+            width: 100%; min-height: 52px; padding: 12px 16px; border-radius: 14px;
+            border: 1px solid var(--border-strong); background: var(--bg-elevated); outline: none; font-size: 17px;
+        }
+        .lock-field input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-dim); }
+        .remember-row {
+            display: flex; align-items: center; gap: 10px; text-align: left;
+            margin: 4px 0 18px; font-size: 14px; color: var(--text-2); user-select: none;
+        }
+        .remember-row input { width: 18px; height: 18px; accent-color: var(--teal); }
+        .lock-btn {
+            width: 100%; min-height: 54px; border: none; border-radius: 14px;
+            background: linear-gradient(180deg, #45c9a6, #2f9e86); color: #06241c;
+            font-weight: 750; font-size: 17px; cursor: pointer;
+        }
+        .lock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .lock-btn.preview-btn {
+            margin-top: 10px;
+            background: var(--bg-elevated);
+            color: var(--text);
+            border: 1px solid var(--border-strong);
+            font-weight: 700;
+        }
+        .lock-btn.preview-btn:hover { background: var(--surface-2); }
+        .lock-error, .lock-setup-needed {
+            display: none; margin-top: 14px; font-size: 13px; border-radius: 12px;
+            padding: 12px 14px; text-align: left; line-height: 1.4;
+        }
+        .lock-error { color: #ffb4a8; background: rgba(220,80,60,0.12); border: 1px solid rgba(220,80,60,0.25); }
+        .lock-setup-needed { color: #e8c878; background: rgba(200,150,40,0.12); border: 1px solid rgba(200,150,40,0.25); }
+        .lock-error.show, .lock-setup-needed.show { display: block; }
+        .lock-setup-needed a { color: var(--teal); font-weight: 650; }
+        .preview-link {
+            display: inline-block; margin-top: 14px; font-size: 13px; color: var(--text-3);
+            text-decoration: underline; cursor: pointer; background: none; border: none;
+        }
+
+        /* ── App shell ── */
+        #appShell { display: none; }
+        #appShell.show { display: block; }
+
+        .trust-banner {
+            display: none;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 650;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            min-height: var(--status-h);
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .trust-banner.show { display: flex; }
+        .trust-banner.local {
+            background: rgba(200, 150, 40, 0.14);
+            color: #e8c878;
+        }
+        .trust-banner.synced {
+            background: rgba(47, 158, 134, 0.12);
+            color: #8ee0c8;
+        }
+        .trust-banner.kiosk {
+            background: rgba(107, 124, 255, 0.12);
+            color: #b4bcff;
+        }
+
+        .dash-header {
+            position: sticky; top: 0; z-index: 100;
+            padding: calc(10px + var(--safe-t)) 20px 12px;
+            background: rgba(15, 20, 18, 0.82);
+            backdrop-filter: blur(18px) saturate(1.2);
+            -webkit-backdrop-filter: blur(18px) saturate(1.2);
+            border-bottom: 1px solid var(--border);
+        }
+        .dash-header-inner {
+            max-width: var(--content-max); margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        }
+        .brand-kicker {
+            font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--text-3); margin-bottom: 2px;
+        }
+        .brand-title {
+            font-size: clamp(18px, 2.2vw, 22px); font-weight: 700; letter-spacing: -0.4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .header-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .live-clock { text-align: right; display: none; }
+        @media (min-width: 640px) { .live-clock { display: block; } }
+        .live-clock-time { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+        .live-clock-date { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+
+        .icon-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text-2); cursor: pointer; border-radius: 12px;
+        }
+        .icon-btn:hover { color: var(--text); background: var(--surface-2); }
+        .icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .icon-btn svg { width: 18px; height: 18px; }
+        .icon-btn.dirty {
+            border-color: rgba(232, 200, 120, 0.45); color: #e8c878;
+            background: rgba(232, 200, 120, 0.08);
+        }
+
+        .dash-main { max-width: var(--content-max); margin: 0 auto; padding: 18px 16px 0; }
+        @media (min-width: 900px) { .dash-main { padding: 22px 24px 0; } }
+
+        .status-banner {
+            visibility: hidden; opacity: 0;
+            min-height: var(--status-h);
+            margin-bottom: 14px; padding: 12px 16px; border-radius: var(--radius-sm);
+            font-size: 14px; border: 1px solid transparent; background: transparent; color: var(--text-2);
+            display: flex; align-items: center;
+            transition: opacity 0.15s ease;
+        }
+        .status-banner.show {
+            visibility: visible; opacity: 1;
+            border-color: var(--border); background: var(--surface);
+        }
+        .status-banner.error { background: rgba(220,80,60,0.12); border-color: rgba(220,80,60,0.28); color: #ffb4a8; }
+        .status-banner.ok { background: rgba(47,158,134,0.12); border-color: rgba(47,158,134,0.28); color: #8ee0c8; }
+        .status-banner.warn { background: rgba(200,150,40,0.12); border-color: rgba(200,150,40,0.28); color: #e8c878; }
+
+        .hero {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media (min-width: 800px) {
+            .hero { grid-template-columns: 1.55fr 1fr; gap: 14px; }
+        }
+
+        .hero-stay {
+            position: relative;
+            overflow: hidden;
+            border-radius: calc(var(--radius) + 4px);
+            min-height: 168px;
+            padding: 22px 22px 18px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-card);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+            background: linear-gradient(135deg, #2a8f78, #1f6b5c);
+        }
+        .hero-stay[data-parent="dad"] {
+            background: linear-gradient(135deg, #5b6ef0, #3d4db8);
+        }
+        .hero-stay[data-parent="none"] {
+            background: linear-gradient(135deg, #2a3330, #1a211e);
+            color: var(--text);
+        }
+        .hero-kicker {
+            font-size: 12px;
+            font-weight: 750;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+        .hero-place {
+            font-size: clamp(30px, 5vw, 44px);
+            font-weight: 750;
+            letter-spacing: -1.1px;
+            line-height: 1.05;
+            margin: 8px 0 4px;
+        }
+        .hero-countdown {
+            font-size: clamp(16px, 2.2vw, 20px);
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            line-height: 1.25;
+            opacity: 0.95;
+        }
+        .hero-sub {
+            font-size: 14px;
+            opacity: 0.88;
+            font-weight: 500;
+            line-height: 1.35;
+        }
+        .hero-progress {
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.22);
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .hero-progress > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.85);
+            width: 0%;
+            transition: width 0.25s ease;
+        }
+        .hero-stay[data-parent="none"] .hero-progress {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .hero-stay[data-parent="none"] .hero-progress > span {
+            background: var(--teal);
+        }
+
+        .hero-next {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 18px 16px;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+            min-height: 168px;
+        }
+        .hero-next-label {
+            font-size: 11px;
+            font-weight: 750;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-3);
+        }
+        .hero-next-place {
+            font-size: clamp(20px, 2.8vw, 26px);
+            font-weight: 750;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            line-height: 1.15;
+        }
+        .hero-next-when {
+            font-size: 15px;
+            color: var(--text-2);
+            font-weight: 600;
+            line-height: 1.35;
+        }
+        .hero-next-detail {
+            font-size: 13px;
+            color: var(--text-3);
+            line-height: 1.35;
+        }
+        .stat-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .stat-muted { color: var(--text-3); font-weight: 600; font-size: 15px; }
+
+        .toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+            gap: 12px; margin-bottom: 12px;
+        }
+        .toolbar-left { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+        .view-switch {
+            display: inline-flex; flex-wrap: wrap; padding: 4px; background: var(--surface);
+            border: 1px solid var(--border); border-radius: 999px; gap: 2px;
+        }
+        .view-switch button {
+            min-height: 36px; padding: 0 12px; border: none; border-radius: 999px;
+            background: transparent; color: var(--text-2); font-weight: 650; font-size: 12px; cursor: pointer;
+        }
+        .view-switch button.active {
+            background: var(--surface-2); color: var(--text);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .tool-btn {
+            min-height: 40px; padding: 0 14px; border-radius: 999px;
+            border: 1px solid var(--border); background: var(--surface); color: var(--text);
+            font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap;
+        }
+        .tool-btn.primary {
+            background: color-mix(in srgb, var(--teal) 22%, transparent);
+            border-color: color-mix(in srgb, var(--teal) 45%, transparent);
+            color: var(--teal);
+        }
+
+        .range-nav { display: flex; align-items: center; gap: 8px; }
+        .range-label {
+            font-size: clamp(14px, 2vw, 18px); font-weight: 700; letter-spacing: -0.3px;
+            min-width: 12ch; text-align: center;
+        }
+        .nav-btn {
+            width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text-2); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:hover { color: var(--text); background: var(--surface-2); }
+        .nav-btn svg { width: 18px; height: 18px; }
+
+        .legend-inline {
+            display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; align-items: center;
+        }
+        .legend-item {
+            display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; color: var(--text-2);
+        }
+        .legend-swatch { width: 14px; height: 14px; border-radius: 4px; }
+        .legend-hint { font-size: 12px; color: var(--text-3); font-weight: 500; margin-left: auto; }
+        @media (max-width: 560px) { .legend-hint { display: none; } }
+
+        .selection-hint {
+            font-size: 13px; color: var(--text-3); margin-bottom: 10px; min-height: 1.2em;
+        }
+        .selection-hint.active { color: var(--teal); font-weight: 650; }
+
+        /* Week board */
+        .week-board { display: grid; gap: 12px; }
+        .week-row-label {
+            font-size: 12px; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--text-3); padding-left: 2px;
+        }
+        .week-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+        @media (min-width: 900px) { .week-strip { gap: 10px; } }
+
+        .week-day {
+            position: relative; min-height: clamp(96px, 16vh, 140px);
+            border-radius: var(--radius-sm); border: 1px solid var(--border);
+            background: var(--surface); padding: 10px 8px 12px; cursor: pointer;
+            text-align: left; display: flex; flex-direction: column;
+            transition: box-shadow 0.12s ease, border-color 0.12s;
+            overflow: hidden; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+        }
+        .week-day:hover { border-color: var(--border-strong); }
+        .week-day.today { box-shadow: 0 0 0 2px rgba(61, 186, 154, 0.55); }
+        .week-day.selected, .week-day.in-range { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); }
+        .week-day.has-parent { border-color: transparent; color: #fff; }
+        .week-dow { font-size: 11px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
+        .week-date {
+            font-size: clamp(22px, 3.2vw, 30px); font-weight: 750; letter-spacing: -0.8px;
+            margin-top: 4px; line-height: 1; display: flex; align-items: baseline; gap: 6px;
+        }
+        .parent-initial {
+            font-size: 0.45em; font-weight: 800; opacity: 0.95;
+            width: 1.4em; height: 1.4em; border-radius: 6px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.18);
+        }
+        .week-empty .parent-initial { display: none; }
+        .week-place { margin-top: auto; font-size: clamp(12px, 1.5vw, 15px); font-weight: 750; letter-spacing: -0.2px; line-height: 1.2; }
+        .week-time { margin-top: 4px; font-size: 11px; font-weight: 600; opacity: 0.88; }
+        .week-empty .week-place { color: var(--text-3); font-weight: 600; }
+        .week-note {
+            position: absolute; top: 10px; right: 8px; width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.75);
+        }
+        .school-badge {
+            margin-top: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
+            text-transform: uppercase; opacity: 0.9; line-height: 1.15;
+        }
+        .week-empty .school-badge { color: #e8c878; }
+
+        /* Month — same language as week tiles: soft gaps, rounded cards, no grid lines */
+        .month-card {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            overflow: visible;
+        }
+        .dow-row {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 8px;
+            background: transparent;
+            border: none;
+        }
+        @media (min-width: 900px) {
+            .dow-row { gap: 10px; }
+        }
+        .dow {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 750;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            padding: 4px 2px 6px;
+        }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+        }
+        @media (min-width: 900px) {
+            .cal-grid { gap: 10px; }
+        }
+        .day-cell {
+            position: relative;
+            min-height: clamp(72px, 12vh, 104px);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            padding: 8px 7px 10px;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: box-shadow 0.12s ease, border-color 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .day-cell:hover:not(.outside) { border-color: var(--border-strong); }
+        .day-cell.outside {
+            opacity: 0.38;
+            background: var(--bg-elevated);
+            border-color: transparent;
+        }
+        .day-cell.today { box-shadow: 0 0 0 2px rgba(61, 186, 154, 0.55); }
+        .day-cell.selected, .day-cell.in-range { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); }
+        .day-cell.has-parent {
+            border-color: transparent;
+            color: #fff;
+        }
+        .day-num {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            font-size: 15px;
+            font-weight: 750;
+            letter-spacing: -0.3px;
+            color: inherit;
+            margin-bottom: 4px;
+            line-height: 1.1;
+        }
+        .day-cell.outside .day-num { color: var(--text-3); font-weight: 600; }
+        .day-cell:not(.has-parent) .day-num { color: var(--text); }
+        .day-cell.today:not(.has-parent) .day-num {
+            color: var(--teal);
+        }
+        .day-place {
+            margin-top: auto;
+            font-size: 12px;
+            font-weight: 750;
+            letter-spacing: -0.15px;
+            line-height: 1.2;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .day-cell:not(.has-parent) .day-place {
+            color: var(--text-3);
+            font-weight: 600;
+        }
+        .day-time {
+            margin-top: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            opacity: 0.88;
+        }
+        .day-cell.has-parent.partial {
+            background-image: repeating-linear-gradient(
+                -45deg, transparent, transparent 4px, rgba(0,0,0,0.12) 4px, rgba(0,0,0,0.12) 8px
+            );
+        }
+        .day-note-dot {
+            position: absolute;
+            top: 10px;
+            right: 8px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.75);
+        }
+        .day-cell:not(.has-parent) .day-note-dot { background: var(--text-3); }
+        .day-school-mark {
+            margin-top: 3px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #e8c878;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            line-height: 1.1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .day-cell.has-parent .day-school-mark {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Multi-month (quarter / 6mo / year) */
+        .multi-panel {
+            display: grid; gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+        @media (min-width: 900px) {
+            .multi-panel.cols-3 { grid-template-columns: repeat(3, 1fr); }
+            .multi-panel.cols-4 { grid-template-columns: repeat(4, 1fr); }
+            .multi-panel.cols-6 { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (min-width: 1100px) {
+            .multi-panel.cols-6 { grid-template-columns: repeat(6, 1fr); }
+            .multi-panel.cols-12 { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (min-width: 1400px) {
+            .multi-panel.cols-12 { grid-template-columns: repeat(6, 1fr); }
+        }
+
+        .mini-month {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 10px 8px 8px; box-shadow: var(--shadow-card);
+        }
+        .mini-month-title {
+            font-size: 13px; font-weight: 750; letter-spacing: -0.2px;
+            margin-bottom: 8px; padding: 0 4px; color: var(--text);
+        }
+        .mini-dows {
+            display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 2px;
+        }
+        .mini-dows span {
+            text-align: center; font-size: 9px; font-weight: 700; color: var(--text-3);
+            text-transform: uppercase;
+        }
+        .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .mini-day {
+            aspect-ratio: 1; border-radius: 4px; border: none; cursor: pointer;
+            background: var(--bg-elevated); font-size: 10px; font-weight: 700;
+            color: var(--text-3); display: flex; align-items: center; justify-content: center;
+            position: relative; padding: 0; min-height: 0;
+            transition: box-shadow 0.1s ease;
+        }
+        .mini-day.outside { visibility: hidden; }
+        .mini-day.has-parent { color: #fff; }
+        .mini-day.today { box-shadow: 0 0 0 2px var(--teal); }
+        .mini-day.selected, .mini-day.in-range { box-shadow: 0 0 0 2px rgba(255,255,255,0.45); }
+        .mini-day.no-school::after {
+            content: ''; position: absolute; bottom: 2px; width: 3px; height: 3px;
+            border-radius: 50%; background: #e8c878;
+        }
+
+        .panel-hidden { display: none !important; }
+
+        /* Reserved slot — no layout jump when selection appears */
+        .range-bar-slot {
+            min-height: var(--range-bar-h);
+            margin-top: 14px;
+        }
+        .range-bar {
+            display: flex; visibility: hidden; opacity: 0;
+            padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); box-shadow: var(--shadow-card);
+            gap: 10px; flex-wrap: wrap; align-items: center;
+            transition: opacity 0.12s ease;
+        }
+        .range-bar.show { visibility: visible; opacity: 1; }
+        .range-bar-text { flex: 1; min-width: 140px; font-size: 14px; color: var(--text-2); font-weight: 650; }
+
+        .chip-btn {
+            min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border);
+            background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 13px;
+            cursor: pointer; white-space: nowrap;
+        }
+        .chip-btn.mom { background: color-mix(in srgb, var(--mom) 28%, transparent); border-color: color-mix(in srgb, var(--mom) 50%, transparent); }
+        .chip-btn.dad { background: color-mix(in srgb, var(--dad) 28%, transparent); border-color: color-mix(in srgb, var(--dad) 50%, transparent); }
+        .chip-btn.clear, .chip-btn.ghost { color: var(--text-2); background: transparent; }
+
+        .updated-line {
+            margin-top: 14px; font-size: 12px; color: var(--text-3); text-align: center; padding-bottom: 4px;
+        }
+
+        .action-bar {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+            padding: 12px 16px calc(12px + var(--safe-b));
+            background: rgba(15, 20, 18, 0.9);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border);
+        }
+        .action-bar-inner {
+            max-width: var(--content-max); margin: 0 auto; display: flex; gap: 10px;
+        }
+
+        .btn {
+            min-height: 52px; padding: 0 20px; border-radius: 14px; border: 1px solid var(--border);
+            font-weight: 750; cursor: pointer; display: inline-flex; align-items: center;
+            justify-content: center; gap: 8px; font-size: 15px;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-primary {
+            flex: 1; background: linear-gradient(180deg, #45c9a6, #2f9e86);
+            border-color: transparent; color: #06241c;
+        }
+        .btn-secondary { background: var(--surface); color: var(--text-2); }
+        .btn-secondary:hover:not(:disabled) { color: var(--text); }
+
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.55);
+            display: none; align-items: flex-end; justify-content: center;
+            padding: 16px; padding-bottom: calc(16px + var(--safe-b));
+        }
+        .modal-backdrop.show { display: flex; }
+        @media (min-width: 560px) { .modal-backdrop { align-items: center; } }
+
+        .modal {
+            width: 100%; max-width: 440px; max-height: min(90vh, 720px); overflow: auto;
+            background: var(--surface); border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid var(--border);
+        }
+        .modal.modal-wide { max-width: 520px; }
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 16px 16px 8px; position: sticky; top: 0; background: var(--surface); z-index: 1;
+        }
+        .modal-title { font-size: 18px; font-weight: 750; letter-spacing: -0.3px; }
+        .modal-body { padding: 8px 16px 18px; }
+        .field { margin-bottom: 12px; }
+        .field label {
+            display: block; font-size: 12px; font-weight: 700; color: var(--text-3);
+            letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px;
+        }
+        .field input, .field textarea, .field select {
+            width: 100%; min-height: 46px; padding: 10px 12px; border-radius: 12px;
+            border: 1px solid var(--border-strong); background: var(--bg-elevated); outline: none;
+        }
+        .field textarea { min-height: 84px; resize: vertical; }
+        .field input:focus, .field textarea:focus, .field select:focus {
+            border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-dim);
+        }
+        .field-hint { font-size: 13px; color: var(--text-3); margin-top: 6px; line-height: 1.4; }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .modal-actions .btn { flex: 1; min-width: 110px; }
+        .parent-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .parent-pick {
+            min-height: 52px; border-radius: 14px; border: 2px solid var(--border);
+            background: var(--bg-elevated); font-weight: 750; cursor: pointer;
+        }
+        .parent-pick.active { border-color: currentColor; background: rgba(255,255,255,0.04); }
+        .menu-list { display: flex; flex-direction: column; gap: 8px; }
+        .menu-list .btn { width: 100%; }
+
+        .weekday-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .weekday-chip {
+            min-height: 48px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--bg-elevated); color: var(--text-2); font-weight: 750; font-size: 12px; cursor: pointer;
+        }
+        .weekday-chip.active {
+            background: var(--teal-dim);
+            border-color: color-mix(in srgb, var(--teal) 55%, transparent); color: var(--teal);
+        }
+        .preset-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
+        .preset-row .chip-btn { min-height: 36px; font-size: 12px; padding: 0 12px; }
+        .radio-stack { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 12px; }
+        .radio-card {
+            display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px;
+            border-radius: 14px; border: 1px solid var(--border); background: var(--bg-elevated);
+            cursor: pointer; text-align: left;
+        }
+        .radio-card:has(input:checked) {
+            border-color: color-mix(in srgb, var(--teal) 55%, transparent); background: var(--teal-dim);
+        }
+        .radio-card input { margin-top: 3px; accent-color: var(--teal); flex-shrink: 0; }
+        .radio-card strong { display: block; font-size: 14px; font-weight: 750; color: var(--text); margin-bottom: 2px; }
+        .radio-card span { font-size: 12px; color: var(--text-3); line-height: 1.35; }
+        .pattern-preview {
+            margin: 8px 0 4px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border);
+            background: var(--bg-elevated); font-size: 13px; color: var(--text-2); line-height: 1.45;
+        }
+        .pattern-preview strong { color: var(--text); font-weight: 750; }
+        .check-row {
+            display: flex; align-items: flex-start; gap: 10px; margin: 10px 0 4px;
+            font-size: 13px; color: var(--text-2); line-height: 1.35; cursor: pointer; user-select: none;
+        }
+        .check-row input { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--teal); flex-shrink: 0; }
+
+        @media (min-width: 1100px) and (min-height: 700px) {
+            .hero-stay, .hero-next { min-height: 190px; }
+            .hero-stay { padding: 26px 28px 22px; }
+            .week-day { min-height: 150px; padding: 14px 12px; }
+            .week-date { font-size: 34px; }
+            .week-place { font-size: 16px; }
+            .day-cell { min-height: 108px; padding: 10px 9px 12px; }
+            .day-place { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="lockScreen">
+        <div class="lock-card">
+            <div class="lock-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                </svg>
+            </div>
+            <div class="lock-title" id="lockTitle">Casas Kids Calendar</div>
+            <p class="lock-sub" id="lockSub">Enter the family password for the shared schedule, or open a local preview without a password.</p>
+            <form id="lockForm" autocomplete="on">
+                <div class="lock-field" id="passwordFieldWrap">
+                    <label for="familyPassword">Family password</label>
+                    <input id="familyPassword" name="password" type="password" autocomplete="current-password" placeholder="Password">
+                </div>
+                <label class="remember-row" id="rememberRow">
+                    <input type="checkbox" id="rememberDevice" checked>
+                    <span>Keep me unlocked on this device</span>
+                </label>
+                <button type="submit" class="lock-btn" id="unlockBtn">Open shared dashboard</button>
+            </form>
+            <button type="button" class="lock-btn preview-btn" id="previewLocalBtn">Preview locally (no password)</button>
+            <div class="lock-error" id="lockError" role="alert"></div>
+            <div class="lock-setup-needed" id="setupNeeded">
+                Shared access isn’t set up yet. Admin: run
+                <a href="setup.html">setup</a> once, then use the family password above.
+                Until then, use <strong>Preview locally</strong> — no password needed.
+            </div>
+        </div>
+    </div>
+
+    <div id="appShell">
+        <div class="trust-banner" id="trustBanner" role="status"></div>
+        <header class="dash-header">
+            <div class="dash-header-inner">
+                <div class="brand">
+                    <div class="brand-kicker" id="brandKicker">Family dashboard</div>
+                    <div class="brand-title" id="appTitle">Casas Kids Calendar</div>
+                </div>
+                <div class="header-meta">
+                    <div class="live-clock" aria-hidden="true">
+                        <div class="live-clock-time" id="clockTime">—</div>
+                        <div class="live-clock-date" id="clockDate">—</div>
+                    </div>
+                    <button type="button" class="icon-btn edit-only" id="undoBtn" title="Undo" aria-label="Undo" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.2L3 7"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="icon-btn" id="reloadBtn" title="Refresh" aria-label="Refresh">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="icon-btn" id="menuBtn" title="Menu" aria-label="Menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="dash-main">
+            <div class="status-banner" id="statusBanner" role="status" aria-live="polite"></div>
+
+            <section class="hero" aria-label="Current stay">
+                <div class="hero-stay" id="heroStay" data-parent="none">
+                    <div>
+                        <div class="hero-kicker" id="heroKicker">Right now</div>
+                        <div class="hero-place" id="heroPlace">Not set</div>
+                        <div class="hero-countdown" id="heroCountdown">—</div>
+                        <div class="hero-sub" id="heroSub">Assign today on the board below</div>
+                    </div>
+                    <div class="hero-progress" id="heroProgressWrap" hidden>
+                        <span id="heroProgressBar"></span>
+                    </div>
+                </div>
+                <div class="hero-next" id="heroNextCard">
+                    <div class="hero-next-label">Next up</div>
+                    <div class="hero-next-place" id="heroNextPlace"><span class="stat-muted">—</span></div>
+                    <div class="hero-next-when" id="heroNextWhen">—</div>
+                    <div class="hero-next-detail" id="heroNextDetail"></div>
+                </div>
+            </section>
+
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="view-switch" role="tablist" aria-label="View range">
+                        <button type="button" class="active" data-view="week">Week</button>
+                        <button type="button" data-view="twoweek">2 wk</button>
+                        <button type="button" data-view="month">Month</button>
+                        <button type="button" data-view="quarter">Quarter</button>
+                        <button type="button" data-view="sixmonth">6 mo</button>
+                        <button type="button" data-view="year">Year</button>
+                    </div>
+                    <button type="button" class="tool-btn primary edit-only" id="fillPatternToolbarBtn">Add schedule</button>
+                </div>
+                <div class="range-nav">
+                    <button type="button" class="nav-btn" id="prevRange" aria-label="Previous">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <div class="range-label" id="rangeLabel">—</div>
+                    <button type="button" class="nav-btn" id="nextRange" aria-label="Next">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <button type="button" class="nav-btn" id="todayBtn" title="Jump to today" aria-label="Jump to today">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="legend-inline" id="legend"></div>
+            <div class="selection-hint" id="selectionHint" aria-live="polite"></div>
+
+            <div id="weekPanel" class="week-board"></div>
+            <div id="monthPanel" class="month-card panel-hidden">
+                <div class="dow-row" aria-hidden="true">
+                    <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div>
+                    <div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+                </div>
+                <div class="cal-grid" id="calGrid" role="grid" aria-label="Kids calendar month"></div>
+            </div>
+            <div id="multiPanel" class="multi-panel panel-hidden"></div>
+
+            <div class="range-bar-slot edit-only">
+                <div class="range-bar" id="rangeBar">
+                    <div class="range-bar-text" id="rangeBarText">Select days</div>
+                    <button type="button" class="chip-btn mom" id="assignMom">Mom</button>
+                    <button type="button" class="chip-btn dad" id="assignDad">Dad</button>
+                    <button type="button" class="chip-btn clear" id="assignClear">Clear</button>
+                    <button type="button" class="chip-btn ghost" id="rangeDetails">Details…</button>
+                    <button type="button" class="chip-btn ghost" id="rangeCancel">Cancel</button>
+                </div>
+            </div>
+
+            <p class="updated-line" id="lastUpdated">—</p>
+        </main>
+
+        <div class="action-bar edit-only">
+            <div class="action-bar-inner">
+                <button type="button" class="btn btn-secondary" id="undoBarBtn" disabled>Undo</button>
+                <button type="button" class="btn btn-primary" id="saveBtn" disabled>Save changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day editor -->
+    <div class="modal-backdrop" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="editModalTitle">Edit days</div>
+                <button type="button" class="icon-btn" id="editModalClose" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="field-hint" id="editRangeLabel" style="margin-bottom:12px"></p>
+                <div class="parent-picks">
+                    <button type="button" class="parent-pick" id="pickMom" data-parent="mom">Mom's House</button>
+                    <button type="button" class="parent-pick" id="pickDad" data-parent="dad">Dad's House</button>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="editStartTime">Start time</label>
+                        <input type="time" id="editStartTime">
+                    </div>
+                    <div class="field">
+                        <label for="editEndTime">End time</label>
+                        <input type="time" id="editEndTime">
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="editNote">Note</label>
+                    <textarea id="editNote" placeholder="Pickup details, vacation, etc."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="editClear">Clear days</button>
+                    <button type="button" class="btn btn-primary" id="editApply">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="menuModal" role="dialog" aria-modal="true">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Menu</div>
+                <button type="button" class="icon-btn" id="menuClose" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="menu-list">
+                    <button type="button" class="btn btn-secondary edit-only" id="openPatternBtn">Add schedule pattern…</button>
+                    <button type="button" class="btn btn-secondary" id="toggleKioskBtn">Display mode (view only)</button>
+                    <button type="button" class="btn btn-secondary" id="downloadIcsBtn">Download calendar backup</button>
+                    <button type="button" class="btn btn-secondary" id="lockNowBtn">Lock dashboard</button>
+                </div>
+                <p class="field-hint" style="margin-top:14px">
+                    <strong>Display mode</strong> is for a kitchen/wall tablet — hides editing so nobody bumps the schedule.
+                    Undo reverses your last change on this device before you save.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="patternModal" role="dialog" aria-modal="true">
+        <div class="modal modal-wide">
+            <div class="modal-header">
+                <div class="modal-title">Add schedule</div>
+                <button type="button" class="icon-btn" id="patternClose" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="field-hint" style="margin-bottom:12px">
+                    Real schedules often <strong>alternate weeks</strong> (and those weeks can look different).
+                    Patterns expand to normal days — spring break and one-offs stay editable. Defaults skip existing + TUSD no-school days.
+                </p>
+
+                <div class="view-switch" style="margin-bottom:14px" role="tablist" aria-label="Entry mode">
+                    <button type="button" class="active" data-entry-mode="alternate" id="modeAlternate">Alternating weeks</button>
+                    <button type="button" data-entry-mode="every" id="modeEvery">Same every week</button>
+                    <button type="button" data-entry-mode="nl" id="modeNl">Describe it</button>
+                </div>
+
+                <!-- Natural language -->
+                <div id="panelNl" class="panel-hidden">
+                    <div class="field">
+                        <label for="patternNL">Describe the schedule</label>
+                        <textarea id="patternNL" rows="4" placeholder="Examples:
+• With Dad Wed–Mon one week and Wed–Fri the next, from Aug 13 through Jun 5
+• Alternating full weeks with Mom starting Aug 13
+• Every other weekend with Dad
+• With Dad every Wed through Monday, fill the rest with Mom"></textarea>
+                        <div class="field-hint">Runs on-device — no account. Review the form after Interpret, then Apply.</div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="patternNLInterpret" style="width:100%;margin-bottom:12px">Interpret</button>
+                    <div class="pattern-preview" id="patternNLResult">Interpretation appears here.</div>
+                </div>
+
+                <div id="panelStructured">
+                    <div class="field">
+                        <label for="patternSchoolYear">TUSD school year</label>
+                        <select id="patternSchoolYear">
+                            <option value="">Custom dates…</option>
+                        </select>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="patternStart">From</label>
+                            <input type="date" id="patternStart">
+                        </div>
+                        <div class="field">
+                            <label for="patternEnd">Through</label>
+                            <input type="date" id="patternEnd">
+                        </div>
+                    </div>
+
+                    <!-- Same every week -->
+                    <div id="panelEvery" class="panel-hidden">
+                        <div class="field">
+                            <label>Weekdays (every week)</label>
+                            <div class="preset-row">
+                                <button type="button" class="chip-btn" data-preset-every="wedmon">Wed–Mon</button>
+                                <button type="button" class="chip-btn" data-preset-every="weekdays">Mon–Fri</button>
+                                <button type="button" class="chip-btn" data-preset-every="weekend">Sat–Sun</button>
+                                <button type="button" class="chip-btn ghost" data-preset-every="clear">Clear</button>
+                            </div>
+                            <div class="weekday-grid" id="weekdayGridEvery"></div>
+                        </div>
+                        <div class="field">
+                            <label>Those days go to</label>
+                            <div class="parent-picks" style="margin-bottom:0">
+                                <button type="button" class="parent-pick" id="everyPickMom" data-parent="mom">Mom's House</button>
+                                <button type="button" class="parent-pick active" id="everyPickDad" data-parent="dad">Dad's House</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alternating A/B -->
+                    <div id="panelAlternate">
+                        <div class="field">
+                            <label for="patternAnchor">Week A includes this date</label>
+                            <input type="date" id="patternAnchor">
+                            <div class="field-hint">Pick any day in the first “Week A” (e.g. first day of school). The following week is B, then A, then B…</div>
+                        </div>
+                        <div class="preset-row">
+                            <button type="button" class="chip-btn" id="presetAltFull">Full alternating weeks</button>
+                            <button type="button" class="chip-btn" id="presetAltAsym">Wed–Mon / Wed–Fri</button>
+                            <button type="button" class="chip-btn" id="presetAltWeekend">Alt. weekends</button>
+                        </div>
+
+                        <div class="field" style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-elevated);margin-bottom:12px">
+                            <label style="margin-bottom:8px">Week A</label>
+                            <div class="preset-row">
+                                <button type="button" class="chip-btn" data-preset-a="wedmon">Wed–Mon</button>
+                                <button type="button" class="chip-btn" data-preset-a="wedfri">Wed–Fri</button>
+                                <button type="button" class="chip-btn" data-preset-a="weekend">Sat–Sun</button>
+                                <button type="button" class="chip-btn" data-preset-a="all">All week</button>
+                            </div>
+                            <div class="weekday-grid" id="weekdayGridA" style="margin-bottom:10px"></div>
+                            <div class="parent-picks" style="margin-bottom:0">
+                                <button type="button" class="parent-pick" id="aPickMom" data-parent="mom">Mom</button>
+                                <button type="button" class="parent-pick active" id="aPickDad" data-parent="dad">Dad</button>
+                            </div>
+                        </div>
+
+                        <div class="field" style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-elevated)">
+                            <label style="margin-bottom:8px">Week B <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-3)">(can differ from A)</span></label>
+                            <div class="preset-row">
+                                <button type="button" class="chip-btn" data-preset-b="wedmon">Wed–Mon</button>
+                                <button type="button" class="chip-btn" data-preset-b="wedfri">Wed–Fri</button>
+                                <button type="button" class="chip-btn" data-preset-b="weekend">Sat–Sun</button>
+                                <button type="button" class="chip-btn" data-preset-b="all">All week</button>
+                            </div>
+                            <div class="weekday-grid" id="weekdayGridB" style="margin-bottom:10px"></div>
+                            <div class="parent-picks" style="margin-bottom:0">
+                                <button type="button" class="parent-pick" id="bPickMom" data-parent="mom">Mom</button>
+                                <button type="button" class="parent-pick active" id="bPickDad" data-parent="dad">Dad</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="check-row" style="margin-top:12px">
+                        <input type="checkbox" id="patternFillOther">
+                        <span>Fill <strong>remaining</strong> days in each week with the other household</span>
+                    </label>
+                    <label class="check-row">
+                        <input type="checkbox" id="patternSkipSchool" checked>
+                        <span>Skip <strong>TUSD no-school days</strong></span>
+                    </label>
+                    <div class="field" style="margin-top:14px">
+                        <label>If a day is already set</label>
+                        <div class="radio-stack">
+                            <label class="radio-card">
+                                <input type="radio" name="patternConflict" value="skip" checked>
+                                <div>
+                                    <strong>Skip it (recommended)</strong>
+                                    <span>Keeps spring break, vacations, and swaps.</span>
+                                </div>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="patternConflict" value="overwrite">
+                                <div>
+                                    <strong>Overwrite</strong>
+                                    <span>Replaces existing days that match the pattern.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pattern-preview" id="patternPreview">Choose a pattern to preview.</div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="patternCancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="patternApply" disabled>Apply to calendar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/crypto.js"></script>
+    <script src="js/schedule-entry.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        const SESSION_KEY = 'custodyCalendar.session.v1';
+        const REMEMBER_KEY = 'custodyCalendar.remember.v1';
+        const VIEW_KEY = 'custodyCalendar.view.v1';
+        const KIOSK_KEY = 'custodyCalendar.kiosk.v1';
+        const AUTO_REFRESH_MS = 60 * 1000;
+        const UNDO_MAX = 30;
+        const LONG_VIEWS = new Set(['quarter', 'sixmonth', 'year']);
+
+        const defaultData = () => ({
+            version: 1,
+            updatedAt: null,
+            parents: {
+                mom: { label: "Mom's House", color: '#2f9e86' },
+                dad: { label: "Dad's House", color: '#6b7cff' },
+            },
+            blocks: [],
+        });
+
+        let config = null;
+        let githubToken = null;
+        let isLocalPreview = false;
+        let data = defaultData();
+        let dataSha = null;
+        let icsSha = null;
+        let tusdCal = null;
+        let noSchoolMap = new Map();
+        let viewStart = null;
+        let viewMode = localStorage.getItem(VIEW_KEY) || 'week';
+        let viewYear, viewMonth;
+        let multiAnchor = null; // Date for quarter/6mo/year start month
+        let dirty = false;
+        let rangeAnchor = null;
+        let rangeEnd = null;
+        let editParent = 'mom';
+        let entryMode = 'alternate'; // alternate | every | nl
+        let everyDays = new Set([3, 4, 5, 6, 0, 1]);
+        let everyParent = 'dad';
+        let weekADays = new Set([3, 4, 5, 6, 0, 1]);
+        let weekBDays = new Set([3, 4, 5]);
+        let weekAParent = 'dad';
+        let weekBParent = 'dad';
+        let kioskMode = localStorage.getItem(KIOSK_KEY) === '1';
+        let undoStack = [];
+        let refreshTimer = null;
+        let clockTimer = null;
+        let suppressUndoPush = false;
+
+        const $ = (id) => document.getElementById(id);
+
+        function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+        function toISOFromDate(d) { return toISO(d.getFullYear(), d.getMonth(), d.getDate()); }
+        function toISO(y, m, day) {
+            return `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+        function todayISO() { return toISOFromDate(new Date()); }
+        function parseISO(iso) {
+            const [y, m, d] = iso.split('-').map(Number);
+            return { y, m: m - 1, d };
+        }
+        function dateFromISO(iso) {
+            const { y, m, d } = parseISO(iso);
+            return new Date(y, m, d);
+        }
+        function addDaysISO(iso, n) {
+            const dt = dateFromISO(iso);
+            dt.setDate(dt.getDate() + n);
+            return toISOFromDate(dt);
+        }
+        function addDaysDate(d, n) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+        }
+        function compareISO(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+        function eachDate(start, end, fn) {
+            let cur = start;
+            while (compareISO(cur, end) <= 0) {
+                fn(cur);
+                cur = addDaysISO(cur, 1);
+            }
+        }
+        function startOfWeek(d) {
+            const x = startOfDay(d);
+            x.setDate(x.getDate() - x.getDay());
+            return x;
+        }
+        function uid() {
+            return crypto.randomUUID ? crypto.randomUUID() : 'b-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        }
+        function cloneData(d) {
+            return JSON.parse(JSON.stringify(d));
+        }
+        function shortLabel(label, fallback) {
+            if (!label) return fallback;
+            return label.replace(/'s House$/i, '').replace(/ House$/i, '').trim() || fallback;
+        }
+        function parentInitial(parent) {
+            return parent === 'dad' ? 'D' : 'M';
+        }
+        function formatPretty(iso) {
+            return dateFromISO(iso).toLocaleDateString(undefined, {
+                weekday: 'short', month: 'short', day: 'numeric',
+            });
+        }
+
+        function pushUndo() {
+            if (suppressUndoPush) return;
+            undoStack.push(cloneData(data));
+            if (undoStack.length > UNDO_MAX) undoStack.shift();
+            updateUndoButtons();
+        }
+
+        function undo() {
+            if (!undoStack.length || kioskMode) return;
+            data = undoStack.pop();
+            setDirty(true);
+            clearSelection(false);
+            renderAll();
+            showStatus('Undid last change. Save when ready.', 'ok');
+            setTimeout(() => showStatus(''), 2500);
+            updateUndoButtons();
+        }
+
+        function updateUndoButtons() {
+            const dis = !undoStack.length || kioskMode;
+            $('undoBtn').disabled = dis;
+            $('undoBarBtn').disabled = dis;
+        }
+
+        function setDirty(v) {
+            dirty = v;
+            const canSave = v && githubToken && !isLocalPreview && !kioskMode;
+            $('saveBtn').disabled = !canSave;
+            $('menuBtn').classList.toggle('dirty', v);
+            if (isLocalPreview) {
+                $('saveBtn').textContent = 'Not shared (preview)';
+                $('saveBtn').disabled = true;
+            } else {
+                $('saveBtn').textContent = v ? 'Save changes' : 'All changes saved';
+                if (!v) $('saveBtn').disabled = true;
+            }
+            updateUndoButtons();
+        }
+
+        function updateTrustBanner() {
+            const el = $('trustBanner');
+            el.classList.remove('show', 'local', 'synced', 'kiosk');
+            if (kioskMode) {
+                el.textContent = 'Display mode — view only. Open menu to exit and edit.';
+                el.classList.add('show', 'kiosk');
+                $('brandKicker').textContent = 'Display mode';
+            } else if (isLocalPreview || !githubToken) {
+                el.textContent = 'Local preview — changes stay on this device and are not shared with the other household.';
+                el.classList.add('show', 'local');
+                $('brandKicker').textContent = 'Local preview';
+            } else {
+                el.textContent = 'Shared schedule — Save to sync with the other household.';
+                el.classList.add('show', 'synced');
+                $('brandKicker').textContent = 'Family dashboard';
+            }
+            document.body.classList.toggle('kiosk-mode', kioskMode);
+            $('toggleKioskBtn').textContent = kioskMode ? 'Exit display mode' : 'Display mode (view only)';
+        }
+
+        function showStatus(msg, kind) {
+            const el = $('statusBanner');
+            el.textContent = msg || '';
+            el.classList.remove('error', 'ok', 'warn', 'show');
+            if (!msg) return;
+            if (kind) el.classList.add(kind);
+            el.classList.add('show');
+        }
+
+        function formatUpdated(iso) {
+            if (!iso) return 'No saves yet · edits sync when you save';
+            try {
+                return 'Last saved ' + new Date(iso).toLocaleString(undefined, {
+                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                });
+            } catch {
+                return 'Last saved ' + iso;
+            }
+        }
+
+        function applyParentCss() {
+            const mom = data.parents.mom.color || '#2f9e86';
+            const dad = data.parents.dad.color || '#6b7cff';
+            document.documentElement.style.setProperty('--mom', mom);
+            document.documentElement.style.setProperty('--dad', dad);
+            $('pickMom').style.color = mom;
+            $('pickDad').style.color = dad;
+            $('assignMom').textContent = shortLabel(data.parents.mom.label, 'Mom');
+            $('assignDad').textContent = shortLabel(data.parents.dad.label, 'Dad');
+            $('pickMom').textContent = data.parents.mom.label || "Mom's House";
+            $('pickDad').textContent = data.parents.dad.label || "Dad's House";
+        }
+
+        function rebuildNoSchoolMap() {
+            noSchoolMap = new Map();
+            if (!tusdCal || !Array.isArray(tusdCal.years)) return;
+            for (const year of tusdCal.years) {
+                for (const br of year.breaks || []) {
+                    if (!br.start || !br.end) continue;
+                    eachDate(br.start, br.end, (iso) => noSchoolMap.set(iso, br.name || 'Recess'));
+                }
+                for (const d of year.nonStudentDays || []) {
+                    if (d.date) noSchoolMap.set(d.date, d.name || 'No school');
+                }
+            }
+        }
+
+        function schoolLabel(iso) { return noSchoolMap.get(iso) || null; }
+
+        function shortSchoolLabel(name) {
+            if (!name) return '';
+            const n = String(name);
+            if (/spring/i.test(n)) return 'Spring break';
+            if (/winter/i.test(n)) return 'Winter break';
+            if (/fall/i.test(n)) return 'Fall break';
+            if (/labor/i.test(n)) return 'Labor Day';
+            if (/memorial/i.test(n)) return 'Memorial Day';
+            if (/veterans/i.test(n)) return "Veterans Day";
+            if (/mlk|king/i.test(n)) return 'MLK Day';
+            if (/lincoln/i.test(n)) return "Lincoln's Day";
+            if (/washington/i.test(n)) return "Presidents Day";
+            if (/staff|teacher|development|work day/i.test(n)) return 'No school';
+            return n.length > 18 ? n.slice(0, 16) + '…' : n;
+        }
+
+        async function loadTusdCalendar() {
+            try {
+                const res = await fetch('data/tusd-calendar.json', { cache: 'no-store' });
+                if (!res.ok) throw new Error('missing');
+                tusdCal = await res.json();
+                rebuildNoSchoolMap();
+                populateSchoolYearSelect();
+            } catch (e) {
+                console.warn(e);
+                tusdCal = null;
+                noSchoolMap = new Map();
+            }
+        }
+
+        function populateSchoolYearSelect() {
+            const sel = $('patternSchoolYear');
+            if (!sel) return;
+            const keep = sel.value;
+            sel.innerHTML = '<option value="">Custom dates…</option>';
+            if (!tusdCal || !tusdCal.years) return;
+            for (const y of tusdCal.years) {
+                const opt = document.createElement('option');
+                opt.value = y.id;
+                opt.textContent = `${y.label} (${y.firstDay} → ${y.lastDay})`;
+                sel.appendChild(opt);
+            }
+            const today = todayISO();
+            let pick = keep;
+            if (!pick) {
+                for (const y of tusdCal.years) {
+                    if (compareISO(today, y.lastDay) <= 0) { pick = y.id; break; }
+                }
+                if (!pick && tusdCal.years.length) pick = tusdCal.years[tusdCal.years.length - 1].id;
+            }
+            if (pick) {
+                sel.value = pick;
+                applySchoolYearPreset(pick, false);
+            }
+        }
+
+        function applySchoolYearPreset(id, updatePreview) {
+            const y = (tusdCal?.years || []).find((x) => x.id === id);
+            if (!y) return;
+            $('patternStart').value = y.firstDay;
+            $('patternEnd').value = y.lastDay;
+            if (!$('patternAnchor').value) $('patternAnchor').value = y.firstDay;
+            if (updatePreview !== false) updatePatternPreview();
+        }
+
+        function dayMap() {
+            const map = {};
+            for (const b of data.blocks) {
+                if (!b || !b.parent || !b.startDate) continue;
+                const end = b.endDate || b.startDate;
+                eachDate(b.startDate, end, (iso) => {
+                    map[iso] = {
+                        parent: b.parent,
+                        note: b.note || '',
+                        startTime: b.startTime || '',
+                        endTime: b.endTime || '',
+                        blockId: b.id,
+                    };
+                });
+            }
+            return map;
+        }
+
+        function selectedRange() {
+            if (!rangeAnchor) return null;
+            const a = rangeAnchor;
+            const b = rangeEnd || rangeAnchor;
+            return compareISO(a, b) <= 0 ? { start: a, end: b } : { start: b, end: a };
+        }
+
+        function inSelected(iso) {
+            const r = selectedRange();
+            if (!r) return false;
+            return compareISO(iso, r.start) >= 0 && compareISO(iso, r.end) <= 0;
+        }
+
+        function assignmentLabel(asg) {
+            if (!asg) return null;
+            return data.parents[asg.parent]?.label || asg.parent;
+        }
+
+        function paintBackground(el, parent) {
+            const color = data.parents[parent]?.color || '#555';
+            el.style.background = `linear-gradient(160deg, ${color}, color-mix(in srgb, ${color} 72%, #0a0a0a))`;
+        }
+
+        /* ── Selection without full re-render ── */
+        function updateSelectionUI() {
+            document.querySelectorAll('[data-date]').forEach((el) => {
+                const iso = el.dataset.date;
+                const sel = inSelected(iso);
+                const isEdge = iso === rangeAnchor || iso === (rangeEnd || rangeAnchor);
+                el.classList.toggle('in-range', sel);
+                el.classList.toggle('selected', sel && isEdge);
+            });
+
+            const r = selectedRange();
+            const bar = $('rangeBar');
+            const hint = $('selectionHint');
+            if (!r || kioskMode) {
+                bar.classList.remove('show');
+                hint.textContent = kioskMode ? '' : 'Tap a day to select · tap another day for a range · then Mom / Dad';
+                hint.classList.remove('active');
+                return;
+            }
+            bar.classList.add('show');
+            const label = r.start === r.end
+                ? formatPretty(r.start)
+                : formatPretty(r.start) + ' → ' + formatPretty(r.end);
+            $('rangeBarText').textContent = label;
+            if (!rangeEnd && rangeAnchor) {
+                hint.textContent = 'Selected ' + formatPretty(rangeAnchor) + ' — tap another day to extend the range, or choose Mom / Dad now';
+            } else {
+                const days = [];
+                eachDate(r.start, r.end, (iso) => days.push(iso));
+                hint.textContent = days.length + ' day' + (days.length === 1 ? '' : 's') + ' selected · choose Mom / Dad or Details';
+            }
+            hint.classList.add('active');
+        }
+
+        function onDayClick(iso) {
+            if (kioskMode) return;
+            if (!rangeAnchor || (rangeAnchor && rangeEnd)) {
+                rangeAnchor = iso;
+                rangeEnd = null;
+            } else {
+                rangeEnd = iso;
+            }
+            updateSelectionUI();
+        }
+
+        function clearSelection(updateUI) {
+            rangeAnchor = null;
+            rangeEnd = null;
+            if (updateUI !== false) updateSelectionUI();
+        }
+
+        function renderLegend() {
+            const el = $('legend');
+            el.innerHTML = '';
+            for (const key of ['mom', 'dad']) {
+                const p = data.parents[key];
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `<span class="legend-swatch" style="background:${p.color}"></span><span></span>`;
+                item.querySelector('span:last-child').textContent = `${p.label} (${parentInitial(key)})`;
+                el.appendChild(item);
+            }
+            if (noSchoolMap.size) {
+                const school = document.createElement('div');
+                school.className = 'legend-item';
+                school.innerHTML = `<span class="legend-swatch" style="background:#e8c878"></span><span>TUSD no school</span>`;
+                el.appendChild(school);
+            }
+            const tip = document.createElement('div');
+            tip.className = 'legend-hint';
+            tip.textContent = 'M / D = house · gold mark = no school';
+            el.appendChild(tip);
+        }
+
+        function formatDayLong(iso) {
+            return dateFromISO(iso).toLocaleDateString(undefined, {
+                weekday: 'long', month: 'short', day: 'numeric',
+            });
+        }
+
+        function formatDayShort(iso) {
+            return dateFromISO(iso).toLocaleDateString(undefined, {
+                weekday: 'short', month: 'short', day: 'numeric',
+            });
+        }
+
+        function daysBetweenInclusive(startIso, endIso) {
+            let n = 0;
+            eachDate(startIso, endIso, () => { n += 1; });
+            return n;
+        }
+
+        /** Contiguous same-parent stretch containing `iso` (or null if unset). */
+        function stayBlockAround(map, iso) {
+            const asg = map[iso];
+            if (!asg) return null;
+            let start = iso;
+            let end = iso;
+            // Look back up to ~1 year
+            for (let i = 0; i < 400; i++) {
+                const prev = addDaysISO(start, -1);
+                if (map[prev]?.parent === asg.parent) start = prev;
+                else break;
+            }
+            for (let i = 0; i < 400; i++) {
+                const next = addDaysISO(end, 1);
+                if (map[next]?.parent === asg.parent) end = next;
+                else break;
+            }
+            return { parent: asg.parent, start, end, asg };
+        }
+
+        /** First assigned day on or after `fromIso` (optionally requiring a specific parent). */
+        function findNextAssignment(map, fromIso, opts) {
+            opts = opts || {};
+            for (let i = 0; i < 400; i++) {
+                const iso = addDaysISO(fromIso, i);
+                const a = map[iso];
+                if (!a) continue;
+                if (opts.excludeParent && a.parent === opts.excludeParent) continue;
+                return { iso, asg: a };
+            }
+            return null;
+        }
+
+        function stayCountdownCopy(today, end, daysLeft) {
+            if (daysLeft <= 1) {
+                return {
+                    headline: 'Last day of this stretch',
+                    detail: 'Through today · ' + formatDayLong(today),
+                };
+            }
+            if (daysLeft === 2) {
+                return {
+                    headline: 'Through tomorrow',
+                    detail: formatDayLong(end) + ' · 2 days left including today',
+                };
+            }
+            return {
+                headline: daysLeft + ' more days · through ' + formatDayShort(end),
+                detail: 'This stretch runs through ' + formatDayLong(end),
+            };
+        }
+
+        function renderHero() {
+            const map = dayMap();
+            const today = todayISO();
+            const hero = $('heroStay');
+            const schoolToday = schoolLabel(today);
+            const stay = stayBlockAround(map, today);
+
+            const progressWrap = $('heroProgressWrap');
+            const progressBar = $('heroProgressBar');
+
+            if (stay) {
+                hero.dataset.parent = stay.parent;
+                const color = data.parents[stay.parent]?.color;
+                if (color) {
+                    hero.style.background = stay.parent === 'dad'
+                        ? `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 65%, #1a1a2e))`
+                        : `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 65%, #0a2a22))`;
+                } else hero.style.background = '';
+
+                const place = shortLabel(assignmentLabel(stay.asg), stay.parent);
+                const fullLabel = data.parents[stay.parent]?.label || place;
+                $('heroKicker').textContent = 'Right now';
+                $('heroPlace').textContent = fullLabel;
+
+                const daysLeft = daysBetweenInclusive(today, stay.end);
+                const totalDays = daysBetweenInclusive(stay.start, stay.end);
+                const daysDone = daysBetweenInclusive(stay.start, today);
+                const copy = stayCountdownCopy(today, stay.end, daysLeft);
+                $('heroCountdown').textContent = copy.headline;
+
+                const bits = [copy.detail];
+                if (totalDays > 1) {
+                    bits.push('Day ' + daysDone + ' of ' + totalDays + ' in this stretch');
+                }
+                if (schoolToday) bits.push('TUSD: ' + schoolToday);
+                if (stay.asg.startTime || stay.asg.endTime) {
+                    bits.push([stay.asg.startTime, stay.asg.endTime].filter(Boolean).join(' – '));
+                }
+                if (stay.asg.note) bits.push(stay.asg.note);
+                $('heroSub').textContent = bits.join(' · ');
+
+                progressWrap.hidden = totalDays <= 1;
+                if (totalDays > 1) {
+                    const pct = Math.min(100, Math.round((daysDone / totalDays) * 100));
+                    progressBar.style.width = pct + '%';
+                } else {
+                    progressBar.style.width = '100%';
+                }
+
+                // Next house after this stretch ends
+                const after = addDaysISO(stay.end, 1);
+                const next = findNextAssignment(map, after);
+                if (next) {
+                    const nextLabel = data.parents[next.asg.parent]?.label || shortLabel(assignmentLabel(next.asg), next.asg.parent);
+                    const c = data.parents[next.asg.parent]?.color || '#888';
+                    $('heroNextPlace').innerHTML =
+                        `<span class="stat-dot" style="background:${c}"></span><span></span>`;
+                    $('heroNextPlace').querySelector('span:last-child').textContent = nextLabel;
+
+                    if (next.iso === after) {
+                        $('heroNextWhen').textContent = 'Starting ' + formatDayLong(next.iso);
+                    } else {
+                        // gap of open days between stretches
+                        const gapDays = daysBetweenInclusive(after, addDaysISO(next.iso, -1));
+                        $('heroNextWhen').textContent = 'Starting ' + formatDayLong(next.iso);
+                        $('heroNextDetail').textContent =
+                            gapDays > 0
+                                ? gapDays + ' open day' + (gapDays === 1 ? '' : 's') + ' in between (not set yet)'
+                                : '';
+                    }
+
+                    const nextStay = stayBlockAround(map, next.iso);
+                    if (nextStay && next.iso === after) {
+                        const nextLen = daysBetweenInclusive(nextStay.start, nextStay.end);
+                        $('heroNextDetail').textContent =
+                            nextLen === 1
+                                ? 'One day there'
+                                : nextLen + ' days there · through ' + formatDayShort(nextStay.end);
+                    } else if (next.iso === after && !nextStay) {
+                        $('heroNextDetail').textContent = '';
+                    }
+                } else {
+                    $('heroNextPlace').innerHTML = '<span class="stat-muted">Nothing scheduled next</span>';
+                    $('heroNextWhen').textContent = 'Add days after ' + formatDayShort(stay.end);
+                    $('heroNextDetail').textContent = '';
+                }
+            } else {
+                hero.dataset.parent = 'none';
+                hero.style.background = '';
+                $('heroKicker').textContent = 'Right now';
+                $('heroPlace').textContent = 'Not set';
+                $('heroCountdown').textContent = 'No house assigned for today';
+                $('heroSub').textContent = schoolToday
+                    ? 'TUSD: ' + schoolToday + ' · pick days below to fill this stretch'
+                    : 'Select today (and a range) on the board, then Mom or Dad';
+                progressWrap.hidden = true;
+                progressBar.style.width = '0%';
+
+                const next = findNextAssignment(map, today);
+                if (next) {
+                    const nextLabel = data.parents[next.asg.parent]?.label || shortLabel(assignmentLabel(next.asg), next.asg.parent);
+                    const c = data.parents[next.asg.parent]?.color || '#888';
+                    $('heroNextPlace').innerHTML =
+                        `<span class="stat-dot" style="background:${c}"></span><span></span>`;
+                    $('heroNextPlace').querySelector('span:last-child').textContent = nextLabel;
+                    $('heroNextWhen').textContent = 'Next set day: ' + formatDayLong(next.iso);
+                    const nextStay = stayBlockAround(map, next.iso);
+                    if (nextStay) {
+                        const nextLen = daysBetweenInclusive(nextStay.start, nextStay.end);
+                        $('heroNextDetail').textContent =
+                            nextLen + ' day stretch · through ' + formatDayShort(nextStay.end);
+                    } else {
+                        $('heroNextDetail').textContent = '';
+                    }
+                } else {
+                    $('heroNextPlace').innerHTML = '<span class="stat-muted">Nothing scheduled</span>';
+                    $('heroNextWhen').textContent = 'Fill a school year or tap days below';
+                    $('heroNextDetail').textContent = '';
+                }
+            }
+        }
+
+        function multiMonthCount() {
+            if (viewMode === 'quarter') return 3;
+            if (viewMode === 'sixmonth') return 6;
+            if (viewMode === 'year') return 12;
+            return 0;
+        }
+
+        function updateRangeLabel() {
+            if (viewMode === 'month') {
+                $('rangeLabel').textContent = new Date(viewYear, viewMonth, 1).toLocaleString(undefined, {
+                    month: 'long', year: 'numeric',
+                });
+                return;
+            }
+            if (LONG_VIEWS.has(viewMode)) {
+                const n = multiMonthCount();
+                const start = multiAnchor;
+                const end = new Date(start.getFullYear(), start.getMonth() + n - 1, 1);
+                if (viewMode === 'year') {
+                    $('rangeLabel').textContent = String(start.getFullYear());
+                } else {
+                    $('rangeLabel').textContent =
+                        start.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) +
+                        ' – ' +
+                        end.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                }
+                return;
+            }
+            const days = viewMode === 'twoweek' ? 14 : 7;
+            const start = viewStart;
+            const end = addDaysDate(start, days - 1);
+            const optsEnd = end.getMonth() === start.getMonth()
+                ? { day: 'numeric' }
+                : { month: 'short', day: 'numeric' };
+            $('rangeLabel').textContent =
+                start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+                ' – ' +
+                end.toLocaleDateString(undefined, optsEnd);
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            localStorage.setItem(VIEW_KEY, mode);
+            document.querySelectorAll('.view-switch button').forEach((b) => {
+                b.classList.toggle('active', b.dataset.view === mode);
+            });
+            $('weekPanel').classList.toggle('panel-hidden', mode === 'month' || LONG_VIEWS.has(mode));
+            $('monthPanel').classList.toggle('panel-hidden', mode !== 'month');
+            $('multiPanel').classList.toggle('panel-hidden', !LONG_VIEWS.has(mode));
+            renderAll();
+        }
+
+        function renderWeekBoard() {
+            const panel = $('weekPanel');
+            panel.innerHTML = '';
+            const map = dayMap();
+            const today = todayISO();
+            const weekCount = viewMode === 'twoweek' ? 2 : 1;
+
+            for (let w = 0; w < weekCount; w++) {
+                const weekStart = addDaysDate(viewStart, w * 7);
+                if (weekCount > 1) {
+                    const lab = document.createElement('div');
+                    lab.className = 'week-row-label';
+                    const weekEnd = addDaysDate(weekStart, 6);
+                    lab.textContent =
+                        weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+                        ' – ' +
+                        weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    panel.appendChild(lab);
+                }
+                const strip = document.createElement('div');
+                strip.className = 'week-strip';
+                for (let i = 0; i < 7; i++) {
+                    const d = addDaysDate(weekStart, i);
+                    const iso = toISOFromDate(d);
+                    const asg = map[iso];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'week-day';
+                    btn.dataset.date = iso;
+                    if (iso === today) btn.classList.add('today');
+                    if (asg) {
+                        btn.classList.add('has-parent');
+                        paintBackground(btn, asg.parent);
+                    } else btn.classList.add('week-empty');
+
+                    const dow = document.createElement('div');
+                    dow.className = 'week-dow';
+                    dow.textContent = d.toLocaleDateString(undefined, { weekday: 'short' });
+                    btn.appendChild(dow);
+
+                    const dateEl = document.createElement('div');
+                    dateEl.className = 'week-date';
+                    dateEl.textContent = String(d.getDate());
+                    if (asg) {
+                        const ini = document.createElement('span');
+                        ini.className = 'parent-initial';
+                        ini.textContent = parentInitial(asg.parent);
+                        dateEl.appendChild(ini);
+                    }
+                    btn.appendChild(dateEl);
+
+                    const place = document.createElement('div');
+                    place.className = 'week-place';
+                    place.textContent = asg ? shortLabel(assignmentLabel(asg), asg.parent) : 'Open';
+                    btn.appendChild(place);
+
+                    if (asg && (asg.startTime || asg.endTime)) {
+                        const t = document.createElement('div');
+                        t.className = 'week-time';
+                        t.textContent = [asg.startTime, asg.endTime].filter(Boolean).join('–');
+                        btn.appendChild(t);
+                    }
+                    if (asg && asg.note) {
+                        const note = document.createElement('span');
+                        note.className = 'week-note';
+                        note.title = asg.note;
+                        btn.appendChild(note);
+                    }
+                    const school = schoolLabel(iso);
+                    if (school) {
+                        const badge = document.createElement('div');
+                        badge.className = 'school-badge';
+                        badge.textContent = shortSchoolLabel(school);
+                        badge.title = school;
+                        btn.appendChild(badge);
+                    }
+                    btn.addEventListener('click', () => onDayClick(iso));
+                    strip.appendChild(btn);
+                }
+                panel.appendChild(strip);
+            }
+        }
+
+        function renderMonth() {
+            const grid = $('calGrid');
+            grid.innerHTML = '';
+            const first = new Date(viewYear, viewMonth, 1);
+            const startPad = first.getDay();
+            const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+            const prevDays = new Date(viewYear, viewMonth, 0).getDate();
+            const map = dayMap();
+            const today = todayISO();
+            const cells = [];
+
+            for (let i = startPad - 1; i >= 0; i--) {
+                const day = prevDays - i;
+                const m = viewMonth === 0 ? 11 : viewMonth - 1;
+                const y = viewMonth === 0 ? viewYear - 1 : viewYear;
+                cells.push({ y, m, day, outside: true });
+            }
+            for (let day = 1; day <= daysInMonth; day++) cells.push({ y: viewYear, m: viewMonth, day, outside: false });
+            while (cells.length % 7 !== 0) {
+                const idx = cells.length - (startPad + daysInMonth);
+                const day = idx + 1;
+                const m = viewMonth === 11 ? 0 : viewMonth + 1;
+                const y = viewMonth === 11 ? viewYear + 1 : viewYear;
+                cells.push({ y, m, day, outside: true });
+            }
+
+            for (const c of cells) {
+                const iso = toISO(c.y, c.m, c.day);
+                const cell = document.createElement('button');
+                cell.type = 'button';
+                cell.className = 'day-cell';
+                cell.dataset.date = iso;
+                if (c.outside) cell.classList.add('outside');
+                if (iso === today) cell.classList.add('today');
+
+                const asg = map[iso];
+                if (asg) {
+                    cell.classList.add('has-parent');
+                    paintBackground(cell, asg.parent);
+                    if (asg.startTime || asg.endTime) cell.classList.add('partial');
+                }
+
+                const num = document.createElement('div');
+                num.className = 'day-num';
+                num.textContent = String(c.day);
+                if (asg) {
+                    const ini = document.createElement('span');
+                    ini.className = 'parent-initial';
+                    ini.textContent = parentInitial(asg.parent);
+                    num.appendChild(ini);
+                }
+                cell.appendChild(num);
+
+                const place = document.createElement('div');
+                place.className = 'day-place';
+                place.textContent = asg
+                    ? shortLabel(assignmentLabel(asg), asg.parent)
+                    : (c.outside ? '' : 'Open');
+                cell.appendChild(place);
+
+                if (asg && (asg.startTime || asg.endTime)) {
+                    const t = document.createElement('div');
+                    t.className = 'day-time';
+                    t.textContent = [asg.startTime, asg.endTime].filter(Boolean).join('–');
+                    cell.appendChild(t);
+                }
+                if (asg && asg.note) {
+                    const dot = document.createElement('span');
+                    dot.className = 'day-note-dot';
+                    dot.title = asg.note;
+                    cell.appendChild(dot);
+                }
+                const school = schoolLabel(iso);
+                if (school) {
+                    const mark = document.createElement('span');
+                    mark.className = 'day-school-mark';
+                    mark.textContent = shortSchoolLabel(school);
+                    mark.title = school;
+                    cell.appendChild(mark);
+                }
+                cell.addEventListener('click', () => onDayClick(iso));
+                grid.appendChild(cell);
+            }
+        }
+
+        function renderMultiMonths() {
+            const panel = $('multiPanel');
+            panel.innerHTML = '';
+            const n = multiMonthCount();
+            panel.className = 'multi-panel' +
+                (n === 3 ? ' cols-3' : n === 6 ? ' cols-6' : n === 12 ? ' cols-12' : '');
+
+            const map = dayMap();
+            const today = todayISO();
+            const anchor = multiAnchor || startOfDay(new Date());
+
+            for (let i = 0; i < n; i++) {
+                const monthDate = new Date(anchor.getFullYear(), anchor.getMonth() + i, 1);
+                const y = monthDate.getFullYear();
+                const m = monthDate.getMonth();
+                const card = document.createElement('div');
+                card.className = 'mini-month';
+
+                const title = document.createElement('div');
+                title.className = 'mini-month-title';
+                title.textContent = monthDate.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                title.style.cursor = 'pointer';
+                title.title = 'Open month view';
+                title.addEventListener('click', () => {
+                    viewYear = y;
+                    viewMonth = m;
+                    setViewMode('month');
+                });
+                card.appendChild(title);
+
+                const dows = document.createElement('div');
+                dows.className = 'mini-dows';
+                ['S','M','T','W','T','F','S'].forEach((t) => {
+                    const s = document.createElement('span');
+                    s.textContent = t;
+                    dows.appendChild(s);
+                });
+                card.appendChild(dows);
+
+                const grid = document.createElement('div');
+                grid.className = 'mini-grid';
+                const first = new Date(y, m, 1);
+                const startPad = first.getDay();
+                const daysInMonth = new Date(y, m + 1, 0).getDate();
+                for (let p = 0; p < startPad; p++) {
+                    const empty = document.createElement('span');
+                    empty.className = 'mini-day outside';
+                    grid.appendChild(empty);
+                }
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const iso = toISO(y, m, day);
+                    const asg = map[iso];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'mini-day';
+                    btn.dataset.date = iso;
+                    btn.textContent = String(day);
+                    if (iso === today) btn.classList.add('today');
+                    if (asg) {
+                        btn.classList.add('has-parent');
+                        btn.style.background = data.parents[asg.parent]?.color || '#555';
+                        btn.title = shortLabel(assignmentLabel(asg), asg.parent) + ' (' + parentInitial(asg.parent) + ')';
+                    }
+                    if (schoolLabel(iso)) btn.classList.add('no-school');
+                    btn.addEventListener('click', () => onDayClick(iso));
+                    grid.appendChild(btn);
+                }
+                card.appendChild(grid);
+                panel.appendChild(card);
+            }
+        }
+
+        function renderAll() {
+            updateRangeLabel();
+            renderHero();
+            renderLegend();
+            if (viewMode === 'month') renderMonth();
+            else if (LONG_VIEWS.has(viewMode)) renderMultiMonths();
+            else renderWeekBoard();
+            updateSelectionUI();
+        }
+
+        /** Core mutation: set exact dates (no filling gaps between them) */
+        function applyAssignments(dateList, parent, meta, opts) {
+            meta = meta || {};
+            opts = opts || {};
+            if (!opts.skipUndo) pushUndo();
+
+            const covered = new Set(dateList);
+            const nextBlocks = [];
+
+            for (const b of data.blocks) {
+                const bEnd = b.endDate || b.startDate;
+                const remaining = [];
+                eachDate(b.startDate, bEnd, (iso) => {
+                    if (!covered.has(iso)) remaining.push(iso);
+                });
+                let runStart = null, prev = null;
+                const flush = () => {
+                    if (!runStart) return;
+                    nextBlocks.push({
+                        id: uid(),
+                        parent: b.parent,
+                        startDate: runStart,
+                        endDate: prev,
+                        startTime: b.startTime || null,
+                        endTime: b.endTime || null,
+                        note: b.note || '',
+                    });
+                    runStart = null;
+                };
+                for (const iso of remaining) {
+                    if (!runStart) { runStart = iso; prev = iso; }
+                    else if (addDaysISO(prev, 1) === iso) prev = iso;
+                    else { flush(); runStart = iso; prev = iso; }
+                }
+                flush();
+            }
+
+            if (parent) {
+                const sorted = dateList.slice().sort(compareISO);
+                let runStart = null, prev = null;
+                const flushNew = () => {
+                    if (!runStart) return;
+                    nextBlocks.push({
+                        id: uid(),
+                        parent,
+                        startDate: runStart,
+                        endDate: prev,
+                        startTime: meta.startTime || null,
+                        endTime: meta.endTime || null,
+                        note: meta.note || '',
+                    });
+                    runStart = null;
+                };
+                for (const iso of sorted) {
+                    if (!runStart) { runStart = iso; prev = iso; }
+                    else if (addDaysISO(prev, 1) === iso) prev = iso;
+                    else { flushNew(); runStart = iso; prev = iso; }
+                }
+                flushNew();
+            }
+
+            nextBlocks.sort((a, b) => compareISO(a.startDate, b.startDate) || compareISO(a.endDate || a.startDate, b.endDate || b.startDate));
+            data.blocks = nextBlocks;
+            setDirty(true);
+            if (!opts.skipRender) {
+                clearSelection(false);
+                renderAll();
+            }
+        }
+
+        function assignRange(start, end, parent, meta) {
+            const dates = [];
+            eachDate(start, end, (iso) => dates.push(iso));
+            applyAssignments(dates, parent, meta);
+        }
+
+        function openEditModal() {
+            const r = selectedRange();
+            if (!r || kioskMode) return;
+            const map = dayMap();
+            const sample = map[r.start];
+            editParent = sample?.parent || 'mom';
+            $('editRangeLabel').textContent =
+                r.start === r.end ? formatPretty(r.start) : formatPretty(r.start) + ' → ' + formatPretty(r.end);
+            $('editStartTime').value = sample?.startTime || '';
+            $('editEndTime').value = sample?.endTime || '';
+            $('editNote').value = sample?.note || '';
+            $('pickMom').classList.toggle('active', editParent === 'mom');
+            $('pickDad').classList.toggle('active', editParent === 'dad');
+            $('editModal').classList.add('show');
+        }
+
+        function closeEditModal() { $('editModal').classList.remove('show'); }
+        function openMenu() { $('menuModal').classList.add('show'); }
+        function closeMenu() { $('menuModal').classList.remove('show'); }
+
+        function otherParent(p) { return p === 'mom' ? 'dad' : 'mom'; }
+
+        function patternConflictMode() {
+            const el = document.querySelector('input[name="patternConflict"]:checked');
+            return el ? el.value : 'skip';
+        }
+
+        function buildWeekdayGrid(containerId, getSet, setSet) {
+            const el = $(containerId);
+            if (!el || el.dataset.built === '1') return;
+            el.dataset.built = '1';
+            const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let d = 0; d < 7; d++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'weekday-chip';
+                btn.dataset.dow = String(d);
+                btn.textContent = labels[d];
+                btn.addEventListener('click', () => {
+                    const s = new Set(getSet());
+                    if (s.has(d)) s.delete(d);
+                    else s.add(d);
+                    setSet(s);
+                    syncWeekdayGrid(containerId, s);
+                    updatePatternPreview();
+                });
+                el.appendChild(btn);
+            }
+        }
+
+        function syncWeekdayGrid(containerId, daySet) {
+            document.querySelectorAll('#' + containerId + ' .weekday-chip').forEach((btn) => {
+                btn.classList.toggle('active', daySet.has(Number(btn.dataset.dow)));
+            });
+        }
+
+        function syncParentPicks() {
+            const momL = data.parents.mom.label || "Mom's House";
+            const dadL = data.parents.dad.label || "Dad's House";
+            $('everyPickMom').textContent = momL;
+            $('everyPickDad').textContent = dadL;
+            $('everyPickMom').style.color = data.parents.mom.color || '';
+            $('everyPickDad').style.color = data.parents.dad.color || '';
+            $('everyPickMom').classList.toggle('active', everyParent === 'mom');
+            $('everyPickDad').classList.toggle('active', everyParent === 'dad');
+
+            $('aPickMom').classList.toggle('active', weekAParent === 'mom');
+            $('aPickDad').classList.toggle('active', weekAParent === 'dad');
+            $('bPickMom').classList.toggle('active', weekBParent === 'mom');
+            $('bPickDad').classList.toggle('active', weekBParent === 'dad');
+            $('aPickMom').style.color = data.parents.mom.color || '';
+            $('aPickDad').style.color = data.parents.dad.color || '';
+            $('bPickMom').style.color = data.parents.mom.color || '';
+            $('bPickDad').style.color = data.parents.dad.color || '';
+        }
+
+        function setEntryMode(mode) {
+            entryMode = mode;
+            document.querySelectorAll('[data-entry-mode]').forEach((b) => {
+                b.classList.toggle('active', b.dataset.entryMode === mode);
+            });
+            $('panelNl').classList.toggle('panel-hidden', mode !== 'nl');
+            $('panelStructured').classList.toggle('panel-hidden', mode === 'nl');
+            // When in NL, still show structured underneath after interpret — keep structured visible after interpret
+            if (mode === 'nl') {
+                // NL only first; interpret can switch to structured
+            } else {
+                $('panelEvery').classList.toggle('panel-hidden', mode !== 'every');
+                $('panelAlternate').classList.toggle('panel-hidden', mode !== 'alternate');
+            }
+            updatePatternPreview();
+        }
+
+        function collectPatternConfig() {
+            const mode = entryMode === 'nl' ? (window._nlResolvedMode || 'alternate') : entryMode;
+            // If user is on NL tab without interpreting, try live interpret
+            if (entryMode === 'nl' && !window._nlResolvedMode) {
+                return null;
+            }
+            const start = $('patternStart').value;
+            const end = $('patternEnd').value;
+            const anchor = $('patternAnchor').value || start;
+            const fillOther = $('patternFillOther').checked;
+            const skipSchool = $('patternSkipSchool').checked;
+            const conflict = patternConflictMode();
+
+            if (mode === 'every') {
+                return {
+                    mode: 'every',
+                    start,
+                    end,
+                    every: { days: [...everyDays], parent: everyParent },
+                    fillOther,
+                    skipSchool,
+                    conflict,
+                };
+            }
+            return {
+                mode: 'alternate',
+                start,
+                end,
+                anchor,
+                weekA: { days: [...weekADays], parent: weekAParent },
+                weekB: { days: [...weekBDays], parent: weekBParent },
+                fillOther,
+                skipSchool,
+                conflict,
+            };
+        }
+
+        function computePatternPlan() {
+            if (entryMode === 'nl' && !window._nlResolvedMode) {
+                return { invalid: 'Tap Interpret to turn your description into a schedule, then Apply.', byParent: { mom: [], dad: [] } };
+            }
+            const cfg = collectPatternConfig();
+            if (!cfg) return { invalid: 'Tap Interpret first.', byParent: { mom: [], dad: [] } };
+
+            if (typeof ScheduleEntry === 'undefined') {
+                return { invalid: 'Schedule entry module failed to load.', byParent: { mom: [], dad: [] } };
+            }
+
+            const map = dayMap();
+            return ScheduleEntry.expandPattern(
+                cfg,
+                (iso) => map[iso] || null,
+                (iso) => noSchoolMap.has(iso),
+                {
+                    compareISO,
+                    eachDate,
+                    dateFromISO,
+                    startOfWeekDate: startOfWeek,
+                    toISOFromDate,
+                }
+            );
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function updatePatternPreview() {
+            const el = $('patternPreview');
+            const applyBtn = $('patternApply');
+            const plan = computePatternPlan();
+            if (plan.invalid) {
+                el.innerHTML = plan.invalid;
+                applyBtn.disabled = true;
+                return;
+            }
+            const momN = (plan.byParent.mom || []).length;
+            const dadN = (plan.byParent.dad || []).length;
+            const momL = escapeHtml(shortLabel(data.parents.mom.label, 'Mom'));
+            const dadL = escapeHtml(shortLabel(data.parents.dad.label, 'Dad'));
+            const lines = [];
+            if (entryMode === 'alternate' || window._nlResolvedMode === 'alternate') {
+                lines.push(
+                    `<strong>Alternating weeks</strong> — Week A: ${escapeHtml(ScheduleEntry.formatDays([...weekADays]))} (${weekAParent === 'mom' ? momL : dadL}); ` +
+                    `Week B: ${escapeHtml(ScheduleEntry.formatDays([...weekBDays]))} (${weekBParent === 'mom' ? momL : dadL}).`
+                );
+            } else {
+                lines.push(
+                    `<strong>Every week</strong> — ${escapeHtml(ScheduleEntry.formatDays([...everyDays]))} → ${everyParent === 'mom' ? momL : dadL}.`
+                );
+            }
+            lines.push(`Will set <strong>${momN}</strong> day(s) to <strong>${momL}</strong>, <strong>${dadN}</strong> to <strong>${dadL}</strong>.`);
+            if (plan.skippedExisting) lines.push(`Will <strong>skip ${plan.skippedExisting}</strong> already-set day(s).`);
+            if (plan.skippedSchool) lines.push(`Will leave <strong>${plan.skippedSchool}</strong> TUSD no-school day(s) empty.`);
+            if (patternConflictMode() === 'overwrite' && momN + dadN) {
+                lines.push('<span style="color:#e8c878">Overwrite is on.</span>');
+            }
+            const total = momN + dadN;
+            applyBtn.disabled = total === 0;
+            if (!total) lines.push('Nothing to change with the current options.');
+            el.innerHTML = lines.join('<br>');
+        }
+
+        function applyNlConfig(cfg) {
+            window._nlResolvedMode = cfg.mode;
+            if (cfg.start) $('patternStart').value = cfg.start;
+            if (cfg.end) $('patternEnd').value = cfg.end;
+            if (cfg.anchor) $('patternAnchor').value = cfg.anchor;
+            else if (cfg.start) $('patternAnchor').value = cfg.start;
+            $('patternFillOther').checked = !!cfg.fillOther;
+
+            if (cfg.mode === 'every') {
+                everyDays = new Set(cfg.every.days || []);
+                everyParent = cfg.every.parent || 'dad';
+                setEntryMode('every');
+                syncWeekdayGrid('weekdayGridEvery', everyDays);
+            } else {
+                weekADays = new Set(cfg.weekA.days || []);
+                weekBDays = new Set(cfg.weekB.days || []);
+                weekAParent = cfg.weekA.parent || 'dad';
+                weekBParent = cfg.weekB.parent || 'dad';
+                setEntryMode('alternate');
+                syncWeekdayGrid('weekdayGridA', weekADays);
+                syncWeekdayGrid('weekdayGridB', weekBDays);
+            }
+            // Show structured panels for review after NL
+            $('panelStructured').classList.remove('panel-hidden');
+            $('panelNl').classList.remove('panel-hidden');
+            syncParentPicks();
+            updatePatternPreview();
+        }
+
+        function interpretNl() {
+            const raw = $('patternNL').value;
+            const result = ScheduleEntry.interpretNaturalLanguage(raw, {
+                momLabel: data.parents.mom.label,
+                dadLabel: data.parents.dad.label,
+            });
+            const box = $('patternNLResult');
+            if (!result.ok) {
+                box.innerHTML = '<span style="color:#ffb4a8">' + escapeHtml(result.error) + '</span>';
+                window._nlResolvedMode = null;
+                updatePatternPreview();
+                return;
+            }
+            // If dates missing, keep TUSD/school year fields
+            const cfg = result.config;
+            if (!cfg.start && $('patternStart').value) cfg.start = $('patternStart').value;
+            if (!cfg.end && $('patternEnd').value) cfg.end = $('patternEnd').value;
+            if (!cfg.anchor) cfg.anchor = cfg.start || $('patternAnchor').value;
+            box.innerHTML = '<strong>Got it:</strong> ' + escapeHtml(result.summary) +
+                '<br><span style="color:var(--text-3)">Review the fields below, adjust if needed, then Apply.</span>';
+            applyNlConfig(cfg);
+        }
+
+        function openPatternModal() {
+            if (kioskMode) return;
+            closeMenu();
+            window._nlResolvedMode = null;
+            populateSchoolYearSelect();
+            if (!$('patternAnchor').value && $('patternStart').value) {
+                $('patternAnchor').value = $('patternStart').value;
+            }
+            buildWeekdayGrid('weekdayGridEvery', () => everyDays, (s) => { everyDays = s; });
+            buildWeekdayGrid('weekdayGridA', () => weekADays, (s) => { weekADays = s; });
+            buildWeekdayGrid('weekdayGridB', () => weekBDays, (s) => { weekBDays = s; });
+            syncWeekdayGrid('weekdayGridEvery', everyDays);
+            syncWeekdayGrid('weekdayGridA', weekADays);
+            syncWeekdayGrid('weekdayGridB', weekBDays);
+            syncParentPicks();
+            setEntryMode(entryMode === 'nl' ? 'alternate' : entryMode);
+            updatePatternPreview();
+            $('patternModal').classList.add('show');
+        }
+
+        function closePatternModal() { $('patternModal').classList.remove('show'); }
+
+        function applyPatternFromModal() {
+            const plan = computePatternPlan();
+            if (plan.invalid) {
+                updatePatternPreview();
+                return;
+            }
+            const momN = (plan.byParent.mom || []).length;
+            const dadN = (plan.byParent.dad || []).length;
+            const total = momN + dadN;
+            if (!total) {
+                updatePatternPreview();
+                return;
+            }
+            let msg = `Set ${momN} day(s) to ${shortLabel(data.parents.mom.label, 'Mom')}, ${dadN} to ${shortLabel(data.parents.dad.label, 'Dad')}`;
+            if (plan.skippedExisting) msg += `, skip ${plan.skippedExisting} existing`;
+            if (plan.skippedSchool) msg += `, leave ${plan.skippedSchool} TUSD no-school empty`;
+            msg += '.';
+            if (total >= 14 || patternConflictMode() === 'overwrite') {
+                if (!confirm(msg + '\n\nContinue? You can Undo on this device if needed.')) return;
+            }
+
+            pushUndo();
+            suppressUndoPush = true;
+            if (momN) applyAssignments(plan.byParent.mom, 'mom', {}, { skipUndo: true, skipRender: true });
+            if (dadN) applyAssignments(plan.byParent.dad, 'dad', {}, { skipUndo: true, skipRender: true });
+            suppressUndoPush = false;
+            setDirty(true);
+            clearSelection(false);
+            renderAll();
+            closePatternModal();
+
+            const skippedBits = [];
+            if (plan.skippedExisting) skippedBits.push(`${plan.skippedExisting} already-set`);
+            if (plan.skippedSchool) skippedBits.push(`${plan.skippedSchool} TUSD no-school`);
+            showStatus(
+                skippedBits.length
+                    ? `Schedule applied (${total} days). Left alone: ${skippedBits.join(', ')}. Save when ready.`
+                    : `Schedule applied (${total} days). Save when ready.`,
+                'ok'
+            );
+            setTimeout(() => showStatus(''), 5000);
+        }
+
+        function presetDays(key) {
+            if (key === 'wedmon') return [3, 4, 5, 6, 0, 1];
+            if (key === 'wedfri') return [3, 4, 5];
+            if (key === 'weekdays') return [1, 2, 3, 4, 5];
+            if (key === 'weekend') return [6, 0];
+            if (key === 'all') return [0, 1, 2, 3, 4, 5, 6];
+            return [];
+        }
+
+        function b64EncodeUnicode(str) { return btoa(unescape(encodeURIComponent(str))); }
+        function b64DecodeUnicode(str) { return decodeURIComponent(escape(atob(str))); }
+
+        async function ghFetch(path, options) {
+            if (!githubToken) throw new Error('Not unlocked');
+            const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
+            return fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/vnd.github+json',
+                    Authorization: `Bearer ${githubToken}`,
+                    'X-GitHub-Api-Version': '2022-11-28',
+                    ...(options && options.headers),
+                },
+            });
+        }
+
+        async function getFile(path) {
+            const apiPath = `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch || 'main')}`;
+            const res = await ghFetch(apiPath);
+            if (res.status === 404) return null;
+            if (!res.ok) throw new Error(`Could not load schedule (${res.status}).`);
+            const json = await res.json();
+            return { sha: json.sha, content: b64DecodeUnicode(json.content.replace(/\n/g, '')) };
+        }
+
+        async function putFile(path, content, sha, message) {
+            const apiPath = `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
+            const body = { message, content: b64EncodeUnicode(content), branch: config.branch || 'main' };
+            if (sha) body.sha = sha;
+            const res = await ghFetch(apiPath, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Could not save (${res.status}). ${text.slice(0, 180)}`);
+            }
+            const json = await res.json();
+            return json.content && json.content.sha;
+        }
+
+        function normalizeData(raw) {
+            const base = defaultData();
+            if (!raw || typeof raw !== 'object') return base;
+            return {
+                version: raw.version || 1,
+                updatedAt: raw.updatedAt || null,
+                parents: {
+                    mom: {
+                        label: raw.parents?.mom?.label || base.parents.mom.label,
+                        color: raw.parents?.mom?.color || base.parents.mom.color,
+                    },
+                    dad: {
+                        label: raw.parents?.dad?.label || base.parents.dad.label,
+                        color: raw.parents?.dad?.color || base.parents.dad.color,
+                    },
+                },
+                blocks: Array.isArray(raw.blocks)
+                    ? raw.blocks.map((b) => ({
+                        id: b.id || uid(),
+                        parent: b.parent === 'dad' ? 'dad' : 'mom',
+                        startDate: b.startDate,
+                        endDate: b.endDate || b.startDate,
+                        startTime: b.startTime || null,
+                        endTime: b.endTime || null,
+                        note: b.note || '',
+                    })).filter((b) => b.startDate)
+                    : [],
+            };
+        }
+
+        function buildIcs() {
+            const lines = [
+                'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Casas Kids Calendar//EN',
+                'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Casas Kids Calendar',
+            ];
+            const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+            for (const b of data.blocks) {
+                if (!b.startDate || !b.parent) continue;
+                const label = data.parents[b.parent]?.label || b.parent;
+                const endExclusive = addDaysISO(b.endDate || b.startDate, 1);
+                let description = label;
+                if (b.startTime || b.endTime) description += ` (${[b.startTime, b.endTime].filter(Boolean).join('–')})`;
+                if (b.note) description += '\\n' + String(b.note).replace(/\n/g, '\\n');
+                lines.push('BEGIN:VEVENT');
+                lines.push('UID:' + (b.id || uid()) + '@custody-calendar');
+                lines.push('DTSTAMP:' + stamp);
+                lines.push('DTSTART;VALUE=DATE:' + b.startDate.replace(/-/g, ''));
+                lines.push('DTEND;VALUE=DATE:' + endExclusive.replace(/-/g, ''));
+                lines.push('SUMMARY:' + escapeIcs(label));
+                lines.push('DESCRIPTION:' + escapeIcs(description));
+                lines.push('END:VEVENT');
+            }
+            lines.push('END:VCALENDAR');
+            return lines.join('\r\n') + '\r\n';
+        }
+
+        function escapeIcs(s) {
+            return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+        }
+
+        async function loadSchedule(opts) {
+            const quiet = opts && opts.quiet;
+            if (!quiet) showStatus('Loading schedule…');
+            try {
+                if (!githubToken || isLocalPreview || !config?.owner) {
+                    const res = await fetch('custody_data.json', { cache: 'no-store' });
+                    if (res.ok) data = normalizeData(await res.json());
+                    else data = defaultData();
+                    undoStack = [];
+                    setDirty(false);
+                    applyParentCss();
+                    renderAll();
+                    $('lastUpdated').textContent = formatUpdated(data.updatedAt) + (isLocalPreview ? ' · local preview' : '');
+                    if (!quiet) showStatus(isLocalPreview ? 'Local preview — not shared with the other household.' : '', isLocalPreview ? 'warn' : undefined);
+                    if (!isLocalPreview && !quiet) showStatus('');
+                    updateTrustBanner();
+                    return;
+                }
+
+                const file = await getFile(config.dataPath || 'custody_data.json');
+                if (!file) {
+                    data = defaultData();
+                    dataSha = null;
+                    if (!quiet) showStatus('No schedule yet — assign days and tap Save.', 'warn');
+                } else {
+                    data = normalizeData(JSON.parse(file.content));
+                    dataSha = file.sha;
+                    if (!quiet) showStatus('');
+                }
+                try {
+                    const ics = await getFile(config.icsPath || 'custody.ics');
+                    icsSha = ics ? ics.sha : null;
+                } catch { icsSha = null; }
+                undoStack = [];
+                setDirty(false);
+                applyParentCss();
+                renderAll();
+                $('lastUpdated').textContent = formatUpdated(data.updatedAt);
+                updateTrustBanner();
+            } catch (err) {
+                console.error(err);
+                if (!quiet) showStatus(err.message || String(err), 'error');
+            }
+        }
+
+        async function saveSchedule() {
+            if (!githubToken || !dirty || isLocalPreview || kioskMode) return;
+            showStatus('Saving…');
+            $('saveBtn').disabled = true;
+            try {
+                data.updatedAt = new Date().toISOString();
+                const jsonText = JSON.stringify(data, null, 2) + '\n';
+                const icsText = buildIcs();
+                const latest = await getFile(config.dataPath || 'custody_data.json');
+                if (latest && dataSha && latest.sha !== dataSha) {
+                    if (!confirm('The schedule was updated by someone else.\n\nOK = save your version\nCancel = reload theirs')) {
+                        await loadSchedule();
+                        return;
+                    }
+                    dataSha = latest.sha;
+                } else if (latest) dataSha = latest.sha;
+
+                dataSha = await putFile(
+                    config.dataPath || 'custody_data.json',
+                    jsonText,
+                    dataSha,
+                    `Update Casas Kids Calendar (${data.updatedAt.slice(0, 10)})`
+                );
+                try {
+                    const icsLatest = await getFile(config.icsPath || 'custody.ics');
+                    icsSha = icsLatest ? icsLatest.sha : icsSha;
+                    icsSha = await putFile(
+                        config.icsPath || 'custody.ics',
+                        icsText,
+                        icsSha,
+                        `Update Casas Kids Calendar ICS (${data.updatedAt.slice(0, 10)})`
+                    );
+                } catch (e) { console.warn(e); }
+
+                undoStack = [];
+                setDirty(false);
+                $('lastUpdated').textContent = formatUpdated(data.updatedAt);
+                showStatus('Saved. The other household can refresh to see this.', 'ok');
+                setTimeout(() => showStatus(''), 3500);
+            } catch (err) {
+                console.error(err);
+                showStatus(err.message || String(err), 'error');
+                setDirty(true);
+            }
+        }
+
+        function downloadIcs() {
+            const blob = new Blob([buildIcs()], { type: 'text/calendar;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'casas-kids-calendar.ics';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            closeMenu();
+        }
+
+        function storeSession(token, remember) {
+            const payload = JSON.stringify({ token, at: Date.now() });
+            sessionStorage.setItem(SESSION_KEY, payload);
+            if (remember) localStorage.setItem(REMEMBER_KEY, payload);
+            else localStorage.removeItem(REMEMBER_KEY);
+        }
+
+        function clearSession() {
+            sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(REMEMBER_KEY);
+            githubToken = null;
+        }
+
+        function readStoredSession() {
+            try {
+                const raw = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(REMEMBER_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                return parsed && parsed.token ? parsed.token : null;
+            } catch { return null; }
+        }
+
+        function tickClock() {
+            const now = new Date();
+            $('clockTime').textContent = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+            $('clockDate').textContent = now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function startDashboardTimers() {
+            tickClock();
+            if (clockTimer) clearInterval(clockTimer);
+            clockTimer = setInterval(tickClock, 15000);
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(() => {
+                if (!githubToken || dirty || isLocalPreview) return;
+                loadSchedule({ quiet: true });
+            }, AUTO_REFRESH_MS);
+        }
+
+        function stopDashboardTimers() {
+            if (clockTimer) clearInterval(clockTimer);
+            if (refreshTimer) clearInterval(refreshTimer);
+            clockTimer = null;
+            refreshTimer = null;
+        }
+
+        function showApp() {
+            $('lockScreen').classList.add('hidden');
+            $('appShell').classList.add('show');
+            document.body.classList.add('app-unlocked');
+            applyParentCss();
+            updateTrustBanner();
+            setViewMode(viewMode);
+            startDashboardTimers();
+            loadSchedule();
+        }
+
+        function showLock() {
+            stopDashboardTimers();
+            $('appShell').classList.remove('show');
+            document.body.classList.remove('app-unlocked', 'kiosk-mode');
+            $('lockScreen').classList.remove('hidden');
+            isLocalPreview = false;
+            $('familyPassword').value = '';
+            $('lockError').classList.remove('show');
+        }
+
+        function lockNow() {
+            if (dirty && !confirm('You have unsaved changes. Lock anyway?')) return;
+            clearSession();
+            closeMenu();
+            showLock();
+        }
+
+        function toggleKiosk() {
+            kioskMode = !kioskMode;
+            localStorage.setItem(KIOSK_KEY, kioskMode ? '1' : '0');
+            if (kioskMode) clearSelection(false);
+            updateTrustBanner();
+            updateSelectionUI();
+            updateUndoButtons();
+            setDirty(dirty);
+            closeMenu();
+            showStatus(kioskMode ? 'Display mode on — editing hidden.' : 'Editing enabled again.', kioskMode ? 'ok' : 'ok');
+            setTimeout(() => showStatus(''), 2500);
+        }
+
+        async function unlockWithPassword(password, remember) {
+            const token = await CustodyCrypto.decryptToken(password, config.crypto);
+            githubToken = token;
+            isLocalPreview = false;
+            storeSession(token, remember);
+            $('lockError').classList.remove('show');
+            showApp();
+        }
+
+        function jumpToToday() {
+            const now = new Date();
+            viewStart = startOfWeek(now);
+            viewYear = now.getFullYear();
+            viewMonth = now.getMonth();
+            multiAnchor = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (viewMode === 'year') multiAnchor = new Date(now.getFullYear(), 0, 1);
+            renderAll();
+        }
+
+        function shiftRange(dir) {
+            if (viewMode === 'month') {
+                viewMonth += dir;
+                if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
+                if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
+            } else if (LONG_VIEWS.has(viewMode)) {
+                const step = multiMonthCount();
+                multiAnchor = new Date(multiAnchor.getFullYear(), multiAnchor.getMonth() + dir * step, 1);
+            } else {
+                const step = viewMode === 'twoweek' ? 14 : 7;
+                viewStart = addDaysDate(viewStart, dir * step);
+            }
+            renderAll();
+        }
+
+        async function init() {
+            const now = new Date();
+            viewStart = startOfWeek(now);
+            viewYear = now.getFullYear();
+            viewMonth = now.getMonth();
+            multiAnchor = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            try {
+                const res = await fetch('config.json', { cache: 'no-store' });
+                if (!res.ok) throw new Error('config missing');
+                config = await res.json();
+            } catch { config = null; }
+
+            await loadTusdCalendar();
+
+            if (config && config.appTitle) {
+                $('lockTitle').textContent = config.appTitle;
+                $('appTitle').textContent = config.appTitle;
+                document.title = config.appTitle;
+            }
+
+            if (!CustodyCrypto.isConfigured(config)) {
+                $('setupNeeded').classList.add('show');
+                $('unlockBtn').disabled = true;
+                $('familyPassword').disabled = true;
+                $('rememberRow').style.opacity = '0.45';
+                $('lockSub').textContent = 'Shared access isn’t set up yet. Open a local preview with no password, or finish admin setup for the family password.';
+                // Preview never requires a password — stay on lock screen until they choose.
+                return;
+            }
+
+            const stored = readStoredSession();
+            if (stored) {
+                githubToken = stored;
+                isLocalPreview = false;
+                showApp();
+            }
+        }
+
+        // ── Wire UI ──
+        $('lockForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!CustodyCrypto.isConfigured(config)) {
+                $('lockError').textContent = 'Shared access isn’t set up yet. Use Preview locally (no password), or run setup first.';
+                $('lockError').classList.add('show');
+                return;
+            }
+            const password = $('familyPassword').value;
+            if (!password) {
+                $('lockError').textContent = 'Enter the family password for the shared dashboard, or use Preview locally (no password).';
+                $('lockError').classList.add('show');
+                return;
+            }
+            const btn = $('unlockBtn');
+            btn.disabled = true;
+            btn.textContent = 'Opening…';
+            $('lockError').classList.remove('show');
+            try {
+                await unlockWithPassword(password, $('rememberDevice').checked);
+            } catch (err) {
+                $('lockError').textContent = err.message === 'Wrong password' ? 'Wrong password. Try again.' : (err.message || 'Could not unlock.');
+                $('lockError').classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Open shared dashboard';
+            }
+        });
+
+        // Preview never checks the family password or GitHub token
+        $('previewLocalBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            $('lockError').classList.remove('show');
+            isLocalPreview = true;
+            githubToken = null;
+            showApp();
+        });
+
+        document.querySelectorAll('.view-switch button').forEach((b) => {
+            b.addEventListener('click', () => {
+                if (b.dataset.view === 'year') {
+                    multiAnchor = new Date((multiAnchor || new Date()).getFullYear(), 0, 1);
+                } else if (LONG_VIEWS.has(b.dataset.view) && !multiAnchor) {
+                    multiAnchor = new Date(viewYear, viewMonth, 1);
+                }
+                setViewMode(b.dataset.view);
+            });
+        });
+
+        $('prevRange').addEventListener('click', () => shiftRange(-1));
+        $('nextRange').addEventListener('click', () => shiftRange(1));
+        $('todayBtn').addEventListener('click', jumpToToday);
+        $('reloadBtn').addEventListener('click', () => {
+            if (dirty && !confirm('Discard unsaved changes and refresh?')) return;
+            loadSchedule();
+        });
+        $('undoBtn').addEventListener('click', undo);
+        $('undoBarBtn').addEventListener('click', undo);
+        $('menuBtn').addEventListener('click', openMenu);
+        $('menuClose').addEventListener('click', closeMenu);
+        $('menuModal').addEventListener('click', (e) => { if (e.target === $('menuModal')) closeMenu(); });
+        $('lockNowBtn').addEventListener('click', lockNow);
+        $('downloadIcsBtn').addEventListener('click', downloadIcs);
+        $('toggleKioskBtn').addEventListener('click', toggleKiosk);
+        $('openPatternBtn').addEventListener('click', openPatternModal);
+        $('fillPatternToolbarBtn').addEventListener('click', openPatternModal);
+
+        $('assignMom').addEventListener('click', () => {
+            const r = selectedRange();
+            if (r) assignRange(r.start, r.end, 'mom');
+        });
+        $('assignDad').addEventListener('click', () => {
+            const r = selectedRange();
+            if (r) assignRange(r.start, r.end, 'dad');
+        });
+        $('assignClear').addEventListener('click', () => {
+            const r = selectedRange();
+            if (r) assignRange(r.start, r.end, null);
+        });
+        $('rangeCancel').addEventListener('click', () => clearSelection());
+        $('rangeDetails').addEventListener('click', openEditModal);
+
+        $('pickMom').addEventListener('click', () => {
+            editParent = 'mom';
+            $('pickMom').classList.add('active');
+            $('pickDad').classList.remove('active');
+        });
+        $('pickDad').addEventListener('click', () => {
+            editParent = 'dad';
+            $('pickDad').classList.add('active');
+            $('pickMom').classList.remove('active');
+        });
+        $('editApply').addEventListener('click', () => {
+            const r = selectedRange();
+            if (!r) return;
+            assignRange(r.start, r.end, editParent, {
+                startTime: $('editStartTime').value || null,
+                endTime: $('editEndTime').value || null,
+                note: $('editNote').value.trim(),
+            });
+            closeEditModal();
+        });
+        $('editClear').addEventListener('click', () => {
+            const r = selectedRange();
+            if (!r) return;
+            assignRange(r.start, r.end, null);
+            closeEditModal();
+        });
+        $('editModalClose').addEventListener('click', closeEditModal);
+        $('editModal').addEventListener('click', (e) => { if (e.target === $('editModal')) closeEditModal(); });
+
+        $('patternClose').addEventListener('click', closePatternModal);
+        $('patternCancel').addEventListener('click', closePatternModal);
+        $('patternModal').addEventListener('click', (e) => { if (e.target === $('patternModal')) closePatternModal(); });
+        $('patternApply').addEventListener('click', applyPatternFromModal);
+        $('patternNLInterpret').addEventListener('click', interpretNl);
+
+        document.querySelectorAll('[data-entry-mode]').forEach((b) => {
+            b.addEventListener('click', () => {
+                window._nlResolvedMode = null;
+                setEntryMode(b.dataset.entryMode);
+                if (b.dataset.entryMode !== 'nl') {
+                    $('panelStructured').classList.remove('panel-hidden');
+                    $('panelEvery').classList.toggle('panel-hidden', b.dataset.entryMode !== 'every');
+                    $('panelAlternate').classList.toggle('panel-hidden', b.dataset.entryMode !== 'alternate');
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-preset-every]').forEach((b) => {
+            b.addEventListener('click', () => {
+                const k = b.dataset.presetEvery;
+                everyDays = new Set(k === 'clear' ? [] : presetDays(k === 'wedmon' ? 'wedmon' : k));
+                syncWeekdayGrid('weekdayGridEvery', everyDays);
+                updatePatternPreview();
+            });
+        });
+        document.querySelectorAll('[data-preset-a]').forEach((b) => {
+            b.addEventListener('click', () => {
+                weekADays = new Set(presetDays(b.dataset.presetA));
+                syncWeekdayGrid('weekdayGridA', weekADays);
+                updatePatternPreview();
+            });
+        });
+        document.querySelectorAll('[data-preset-b]').forEach((b) => {
+            b.addEventListener('click', () => {
+                weekBDays = new Set(presetDays(b.dataset.presetB));
+                syncWeekdayGrid('weekdayGridB', weekBDays);
+                updatePatternPreview();
+            });
+        });
+
+        $('presetAltFull').addEventListener('click', () => {
+            weekADays = new Set(presetDays('all'));
+            weekBDays = new Set(presetDays('all'));
+            weekAParent = 'dad';
+            weekBParent = 'mom';
+            syncWeekdayGrid('weekdayGridA', weekADays);
+            syncWeekdayGrid('weekdayGridB', weekBDays);
+            syncParentPicks();
+            updatePatternPreview();
+        });
+        $('presetAltAsym').addEventListener('click', () => {
+            weekADays = new Set(presetDays('wedmon'));
+            weekBDays = new Set(presetDays('wedfri'));
+            weekAParent = 'dad';
+            weekBParent = 'dad';
+            syncWeekdayGrid('weekdayGridA', weekADays);
+            syncWeekdayGrid('weekdayGridB', weekBDays);
+            syncParentPicks();
+            updatePatternPreview();
+        });
+        $('presetAltWeekend').addEventListener('click', () => {
+            weekADays = new Set(presetDays('weekend'));
+            weekBDays = new Set(presetDays('weekend'));
+            weekAParent = 'dad';
+            weekBParent = 'mom';
+            $('patternFillOther').checked = false;
+            syncWeekdayGrid('weekdayGridA', weekADays);
+            syncWeekdayGrid('weekdayGridB', weekBDays);
+            syncParentPicks();
+            updatePatternPreview();
+        });
+
+        $('everyPickMom').addEventListener('click', () => { everyParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
+        $('everyPickDad').addEventListener('click', () => { everyParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
+        $('aPickMom').addEventListener('click', () => { weekAParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
+        $('aPickDad').addEventListener('click', () => { weekAParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
+        $('bPickMom').addEventListener('click', () => { weekBParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
+        $('bPickDad').addEventListener('click', () => { weekBParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
+
+        $('patternStart').addEventListener('change', () => {
+            $('patternSchoolYear').value = '';
+            if (!$('patternAnchor').value) $('patternAnchor').value = $('patternStart').value;
+            updatePatternPreview();
+        });
+        $('patternEnd').addEventListener('change', () => { $('patternSchoolYear').value = ''; updatePatternPreview(); });
+        $('patternAnchor').addEventListener('change', updatePatternPreview);
+        $('patternFillOther').addEventListener('change', updatePatternPreview);
+        $('patternSkipSchool').addEventListener('change', updatePatternPreview);
+        $('patternSchoolYear').addEventListener('change', () => {
+            if ($('patternSchoolYear').value) {
+                applySchoolYearPreset($('patternSchoolYear').value, true);
+                if (!$('patternAnchor').value) $('patternAnchor').value = $('patternStart').value;
+            } else updatePatternPreview();
+        });
+        document.querySelectorAll('input[name="patternConflict"]').forEach((el) => {
+            el.addEventListener('change', updatePatternPreview);
+        });
+
+        $('saveBtn').addEventListener('click', saveSchedule);
+
+        window.addEventListener('beforeunload', (e) => {
+            if (!dirty) return;
+            e.preventDefault();
+            e.returnValue = '';
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+                if (document.activeElement && /input|textarea|select/i.test(document.activeElement.tagName)) return;
+                e.preventDefault();
+                undo();
+                return;
+            }
+            if (e.key === 'Escape') {
+                closeEditModal();
+                closeMenu();
+                closePatternModal();
+                clearSelection();
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && githubToken && !dirty && !isLocalPreview) {
+                loadSchedule({ quiet: true });
+                tickClock();
+            }
+        });
+
+        init();
+    })();
+    </script>
+</body>
+</html>
