@@ -1619,7 +1619,7 @@
             if (!r || kioskMode) {
                 bar.classList.remove('show');
                 $('rangeSplitToggle').hidden = true;
-                hint.textContent = kioskMode ? '' : 'Tap a day to select · tap another day for a range · then Mom / Dad';
+                hint.textContent = kioskMode ? '' : 'Tap days to select a range — it stays selected across weeks — then Mom / Dad';
                 hint.classList.remove('active');
                 return;
             }
@@ -1628,13 +1628,11 @@
                 ? formatPretty(r.start)
                 : formatPretty(r.start) + ' → ' + formatPretty(r.end);
             $('rangeBarText').textContent = label;
-            if (!rangeEnd && rangeAnchor) {
-                hint.textContent = 'Selected ' + formatPretty(rangeAnchor) + ' — tap another day to extend the range, or choose Mom / Dad now';
-            } else {
-                const days = [];
-                eachDate(r.start, r.end, (iso) => days.push(iso));
-                hint.textContent = days.length + ' day' + (days.length === 1 ? '' : 's') + ' selected · choose Mom / Dad or Details';
-            }
+            const days = [];
+            eachDate(r.start, r.end, (iso) => days.push(iso));
+            hint.textContent = days.length === 1
+                ? 'Selected ' + formatPretty(r.start) + ' — tap more days (even in another week) to grow the range'
+                : days.length + ' days selected · tap more days to grow the range, or choose Mom / Dad';
             hint.classList.add('active');
 
             const splitBtn = $('rangeSplitToggle');
@@ -1664,11 +1662,21 @@
 
         function onDayClick(iso) {
             if (kioskMode) return;
-            if (!rangeAnchor || (rangeAnchor && rangeEnd)) {
+            if (!rangeAnchor) {
                 rangeAnchor = iso;
                 rangeEnd = null;
             } else {
-                rangeEnd = iso;
+                const r = selectedRange();
+                if (compareISO(iso, r.start) < 0) {
+                    rangeAnchor = iso;
+                    rangeEnd = r.end;
+                } else if (compareISO(iso, r.end) > 0) {
+                    rangeAnchor = r.start;
+                    rangeEnd = iso;
+                } else {
+                    rangeAnchor = r.start;
+                    rangeEnd = r.end;
+                }
             }
             updateSelectionUI();
         }
