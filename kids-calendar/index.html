@@ -405,6 +405,10 @@
         }
         .nav-btn:hover { color: var(--text); background: var(--surface-2); }
         .nav-btn svg { width: 18px; height: 18px; }
+        .nav-btn.today-jump {
+            width: auto; padding: 0 12px; font-size: 13px; font-weight: 800;
+            color: #8ee0c8; border-color: color-mix(in srgb, var(--teal) 55%, transparent);
+        }
 
         .legend-inline {
             display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; align-items: center;
@@ -413,6 +417,10 @@
             display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; color: var(--text-2);
         }
         .legend-swatch { width: 14px; height: 14px; border-radius: 4px; }
+        .legend-swatch.today-swatch {
+            background: transparent;
+            box-shadow: 0 0 0 2px #3dba9a, 0 0 0 4px rgba(61, 186, 154, 0.35);
+        }
         .legend-hint { font-size: 12px; color: var(--text-3); font-weight: 500; margin-left: auto; }
         @media (max-width: 560px) { .legend-hint { display: none; } }
 
@@ -439,8 +447,13 @@
             overflow: hidden; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
         .week-day:hover { border-color: var(--border-strong); }
-        .week-day.today { box-shadow: 0 0 0 2px rgba(61, 186, 154, 0.55); }
+        .week-day.today {
+            box-shadow: 0 0 0 3px #3dba9a, 0 0 0 7px rgba(61, 186, 154, 0.28);
+        }
         .week-day.selected, .week-day.in-range { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); }
+        .week-day.today.selected, .week-day.today.in-range {
+            box-shadow: 0 0 0 3px #fff, 0 0 0 7px #3dba9a;
+        }
         .week-day.has-parent { border-color: transparent; color: #fff; }
         .week-dow { font-size: 11px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
         .week-date {
@@ -534,8 +547,22 @@
             background: var(--bg-elevated);
             border-color: transparent;
         }
-        .day-cell.today { box-shadow: 0 0 0 2px rgba(61, 186, 154, 0.55); }
+        .day-cell.today {
+            box-shadow: 0 0 0 3px #3dba9a, 0 0 0 7px rgba(61, 186, 154, 0.28);
+        }
         .day-cell.selected, .day-cell.in-range { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); }
+        .day-cell.today.selected, .day-cell.today.in-range {
+            box-shadow: 0 0 0 3px #fff, 0 0 0 7px #3dba9a;
+        }
+        .today-flag {
+            position: absolute; top: 8px; right: 7px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+            background: #06241c; color: #8ee0c8; padding: 2px 6px; border-radius: 999px; line-height: 1.2;
+        }
+        .week-day.today:not(.has-parent) .today-flag,
+        .day-cell.today:not(.has-parent) .today-flag {
+            background: var(--teal); color: #06241c;
+        }
         .day-cell.has-parent {
             border-color: transparent;
             color: #fff;
@@ -672,7 +699,7 @@
         }
         .mini-day.outside { visibility: hidden; }
         .mini-day.has-parent { color: #fff; }
-        .mini-day.today { box-shadow: 0 0 0 2px var(--teal); }
+        .mini-day.today { box-shadow: 0 0 0 2px #3dba9a, 0 0 0 4px rgba(61, 186, 154, 0.35); }
         .mini-day.selected, .mini-day.in-range { box-shadow: 0 0 0 2px rgba(255,255,255,0.45); }
         .mini-day.no-school::after {
             content: ''; position: absolute; bottom: 2px; width: 3px; height: 3px;
@@ -961,11 +988,7 @@
                     <button type="button" class="nav-btn" id="nextRange" aria-label="Next">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
-                    <button type="button" class="nav-btn" id="todayBtn" title="Jump to today" aria-label="Jump to today">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/>
-                        </svg>
-                    </button>
+                    <button type="button" class="nav-btn today-jump" id="todayBtn" title="Jump to today" aria-label="Jump to today">Today</button>
                 </div>
             </div>
 
@@ -1779,6 +1802,10 @@
                 school.innerHTML = `<span class="legend-swatch" style="background:#e8c878"></span><span>TUSD no school</span>`;
                 el.appendChild(school);
             }
+            const todayItem = document.createElement('div');
+            todayItem.className = 'legend-item';
+            todayItem.innerHTML = `<span class="legend-swatch today-swatch"></span><span>Today</span>`;
+            el.appendChild(todayItem);
             const tip = document.createElement('div');
             tip.className = 'legend-hint';
             tip.textContent = 'Split = last day of a stretch (morning that house, afternoon the next) · gold = no school';
@@ -1812,6 +1839,13 @@
             ini.className = 'parent-initial';
             ini.textContent = parentInitial(asg.parent);
             host.appendChild(ini);
+        }
+
+        function appendTodayFlag(host) {
+            const flag = document.createElement('span');
+            flag.className = 'today-flag';
+            flag.textContent = 'Today';
+            host.appendChild(flag);
         }
 
         function paintDayTile(el, asg) {
@@ -2175,9 +2209,13 @@
                     btn.type = 'button';
                     btn.className = 'week-day';
                     btn.dataset.date = iso;
-                    if (iso === today) btn.classList.add('today');
+                    if (iso === today) {
+                        btn.classList.add('today');
+                        btn.setAttribute('aria-current', 'date');
+                    }
                     if (asg) paintDayTile(btn, asg);
                     else btn.classList.add('week-empty');
+                    if (iso === today) appendTodayFlag(btn);
 
                     const dow = document.createElement('div');
                     dow.className = 'week-dow';
@@ -2262,10 +2300,14 @@
                 cell.className = 'day-cell';
                 cell.dataset.date = iso;
                 if (c.outside) cell.classList.add('outside');
-                if (iso === today) cell.classList.add('today');
+                if (iso === today) {
+                    cell.classList.add('today');
+                    cell.setAttribute('aria-current', 'date');
+                }
 
                 const asg = map[iso];
                 if (asg) paintDayTile(cell, asg);
+                if (iso === today) appendTodayFlag(cell);
 
                 const num = document.createElement('div');
                 num.className = 'day-num';
@@ -2369,7 +2411,10 @@
                     btn.className = 'mini-day';
                     btn.dataset.date = iso;
                     btn.textContent = String(day);
-                    if (iso === today) btn.classList.add('today');
+                    if (iso === today) {
+                        btn.classList.add('today');
+                        btn.setAttribute('aria-current', 'date');
+                    }
                     if (asg) {
                         btn.classList.add('has-parent');
                         if (asg.isTransition) {
