@@ -807,6 +807,35 @@
             background: var(--bg-elevated); font-size: 13px; color: var(--text-2); line-height: 1.45;
         }
         .pattern-preview strong { color: var(--text); font-weight: 750; }
+        .recipe-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+        .recipe-chip {
+            min-height: 36px; padding: 0 12px; border-radius: 999px;
+            border: 1px solid var(--border); background: var(--bg-elevated);
+            color: var(--text-2); font-weight: 750; font-size: 12px; cursor: pointer;
+        }
+        .recipe-chip.active {
+            background: var(--teal-dim);
+            border-color: color-mix(in srgb, var(--teal) 55%, transparent); color: var(--teal);
+        }
+        .handoff-row {
+            display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: end;
+            margin-bottom: 10px;
+        }
+        .handoff-row select { min-height: 44px; }
+        .preview-week {
+            display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 10px;
+        }
+        .preview-week.cols-14 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .preview-day {
+            min-height: 52px; border-radius: 8px; padding: 5px 4px; font-size: 10px; font-weight: 700;
+            color: #fff; display: flex; flex-direction: column; justify-content: space-between;
+            border: 1px solid transparent;
+        }
+        .preview-day.open { background: var(--bg-elevated); color: var(--text-3); }
+        .more-options { margin: 10px 0 8px; }
+        .more-options summary {
+            cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text-2); padding: 6px 0;
+        }
         .check-row {
             display: flex; align-items: flex-start; gap: 10px; margin: 10px 0 4px;
             font-size: 13px; color: var(--text-2); line-height: 1.35; cursor: pointer; user-select: none;
@@ -1027,7 +1056,7 @@
             </div>
             <div class="modal-body">
                 <div class="menu-list">
-                    <button type="button" class="btn btn-secondary edit-only" id="openPatternBtn">Add schedule pattern…</button>
+                    <button type="button" class="btn btn-secondary edit-only" id="openPatternBtn">Add schedule…</button>
                     <button type="button" class="btn btn-secondary" id="toggleKioskBtn">Display mode (view only)</button>
                     <button type="button" class="btn btn-secondary" id="downloadIcsBtn">Download calendar backup</button>
                     <button type="button" class="btn btn-secondary" id="lockNowBtn">Lock dashboard</button>
@@ -1050,144 +1079,141 @@
             </div>
             <div class="modal-body">
                 <p class="field-hint" style="margin-bottom:12px">
-                    Real schedules often <strong>alternate weeks</strong> (and those weeks can look different).
-                    Patterns expand to normal days — spring break and one-offs stay editable. Defaults skip existing + TUSD no-school days.
+                    Pick a repeating pattern. It fills the date range as ordinary days — you can still edit one-offs on the board.
                 </p>
-
-                <div class="view-switch" style="margin-bottom:14px" role="tablist" aria-label="Entry mode">
-                    <button type="button" class="active" data-entry-mode="alternate" id="modeAlternate">Alternating weeks</button>
-                    <button type="button" data-entry-mode="every" id="modeEvery">Same every week</button>
-                    <button type="button" data-entry-mode="nl" id="modeNl">Describe it</button>
+                <div class="recipe-row" role="tablist" aria-label="Schedule pattern">
+                    <button type="button" class="recipe-chip active" data-recipe="handoffs">Two handoffs / week</button>
+                    <button type="button" class="recipe-chip" data-recipe="weekon">Week on / week off</button>
+                    <button type="button" class="recipe-chip" data-recipe="weekend">Every other weekend</button>
+                    <button type="button" class="recipe-chip" data-recipe="samenights">Same nights every week</button>
+                    <button type="button" class="recipe-chip" data-recipe="cycle223">2-2-3</button>
+                    <button type="button" class="recipe-chip" data-recipe="custom">Custom week</button>
                 </div>
 
-                <!-- Natural language -->
-                <div id="panelNl" class="panel-hidden">
+                <div class="field">
+                    <label for="patternSchoolYear">School year</label>
+                    <select id="patternSchoolYear">
+                        <option value="">Custom dates…</option>
+                    </select>
+                </div>
+                <div class="field-row">
                     <div class="field">
-                        <label for="patternNL">Describe the schedule</label>
-                        <textarea id="patternNL" rows="4" placeholder="Examples:
-• With Dad Wed–Mon one week and Wed–Fri the next, from Aug 13 through Jun 5
-• Alternating full weeks with Mom starting Aug 13
-• Every other weekend with Dad
-• With Dad every Wed through Monday, fill the rest with Mom"></textarea>
-                        <div class="field-hint">Runs on-device — no account. Review the form after Interpret, then Apply.</div>
+                        <label for="patternStart">From</label>
+                        <input type="date" id="patternStart">
                     </div>
-                    <button type="button" class="btn btn-secondary" id="patternNLInterpret" style="width:100%;margin-bottom:12px">Interpret</button>
-                    <div class="pattern-preview" id="patternNLResult">Interpretation appears here.</div>
+                    <div class="field">
+                        <label for="patternEnd">Through</label>
+                        <input type="date" id="patternEnd">
+                    </div>
                 </div>
 
-                <div id="panelStructured">
+                <div id="panelHandoffs">
                     <div class="field">
-                        <label for="patternSchoolYear">TUSD school year</label>
-                        <select id="patternSchoolYear">
-                            <option value="">Custom dates…</option>
-                        </select>
+                        <label>First exchange</label>
+                        <div class="handoff-row">
+                            <select id="handoff1Dow"></select>
+                            <select id="handoff1From"></select>
+                            <select id="handoff1To"></select>
+                        </div>
+                        <div class="field-hint">Outgoing last morning → new house after school</div>
                     </div>
-                    <div class="field-row">
-                        <div class="field">
-                            <label for="patternStart">From</label>
-                            <input type="date" id="patternStart">
-                        </div>
-                        <div class="field">
-                            <label for="patternEnd">Through</label>
-                            <input type="date" id="patternEnd">
-                        </div>
-                    </div>
-
-                    <!-- Same every week -->
-                    <div id="panelEvery" class="panel-hidden">
-                        <div class="field">
-                            <label>Weekdays (every week)</label>
-                            <div class="preset-row">
-                                <button type="button" class="chip-btn" data-preset-every="wedmon">Wed–Mon</button>
-                                <button type="button" class="chip-btn" data-preset-every="weekdays">Mon–Fri</button>
-                                <button type="button" class="chip-btn" data-preset-every="weekend">Sat–Sun</button>
-                                <button type="button" class="chip-btn ghost" data-preset-every="clear">Clear</button>
-                            </div>
-                            <div class="weekday-grid" id="weekdayGridEvery"></div>
-                        </div>
-                        <div class="field">
-                            <label>Those days go to</label>
-                            <div class="parent-picks" style="margin-bottom:0">
-                                <button type="button" class="parent-pick" id="everyPickMom" data-parent="mom">Mom's House</button>
-                                <button type="button" class="parent-pick active" id="everyPickDad" data-parent="dad">Dad's House</button>
-                            </div>
+                    <div class="field">
+                        <label>Second exchange</label>
+                        <div class="handoff-row">
+                            <select id="handoff2Dow"></select>
+                            <select id="handoff2From"></select>
+                            <select id="handoff2To"></select>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Alternating A/B -->
-                    <div id="panelAlternate">
-                        <div class="field">
-                            <label for="patternAnchor">Week A includes this date</label>
-                            <input type="date" id="patternAnchor">
-                            <div class="field-hint">Pick any day in the first “Week A” (e.g. first day of school). The following week is B, then A, then B…</div>
-                        </div>
-                        <div class="preset-row">
-                            <button type="button" class="chip-btn" id="presetAltFull">Full alternating weeks</button>
-                            <button type="button" class="chip-btn" id="presetAltAsym">Wed–Mon / Wed–Fri</button>
-                            <button type="button" class="chip-btn" id="presetAltWeekend">Alt. weekends</button>
-                        </div>
-
-                        <div class="field" style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-elevated);margin-bottom:12px">
-                            <label style="margin-bottom:8px">Week A</label>
-                            <div class="preset-row">
-                                <button type="button" class="chip-btn" data-preset-a="wedmon">Wed–Mon</button>
-                                <button type="button" class="chip-btn" data-preset-a="wedfri">Wed–Fri</button>
-                                <button type="button" class="chip-btn" data-preset-a="weekend">Sat–Sun</button>
-                                <button type="button" class="chip-btn" data-preset-a="all">All week</button>
-                            </div>
-                            <div class="weekday-grid" id="weekdayGridA" style="margin-bottom:10px"></div>
-                            <div class="parent-picks" style="margin-bottom:0">
-                                <button type="button" class="parent-pick" id="aPickMom" data-parent="mom">Mom</button>
-                                <button type="button" class="parent-pick active" id="aPickDad" data-parent="dad">Dad</button>
-                            </div>
-                        </div>
-
-                        <div class="field" style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-elevated)">
-                            <label style="margin-bottom:8px">Week B <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-3)">(can differ from A)</span></label>
-                            <div class="preset-row">
-                                <button type="button" class="chip-btn" data-preset-b="wedmon">Wed–Mon</button>
-                                <button type="button" class="chip-btn" data-preset-b="wedfri">Wed–Fri</button>
-                                <button type="button" class="chip-btn" data-preset-b="weekend">Sat–Sun</button>
-                                <button type="button" class="chip-btn" data-preset-b="all">All week</button>
-                            </div>
-                            <div class="weekday-grid" id="weekdayGridB" style="margin-bottom:10px"></div>
-                            <div class="parent-picks" style="margin-bottom:0">
-                                <button type="button" class="parent-pick" id="bPickMom" data-parent="mom">Mom</button>
-                                <button type="button" class="parent-pick active" id="bPickDad" data-parent="dad">Dad</button>
-                            </div>
+                <div id="panelWeekOn" class="panel-hidden">
+                    <div class="field">
+                        <label>Who has the first week</label>
+                        <div class="parent-picks" style="margin-bottom:0">
+                            <button type="button" class="parent-pick" id="weekOnMom" data-parent="mom">Mom</button>
+                            <button type="button" class="parent-pick active" id="weekOnDad" data-parent="dad">Dad</button>
                         </div>
                     </div>
+                    <div class="field">
+                        <label for="patternAnchor">A date in that first week</label>
+                        <input type="date" id="patternAnchor">
+                    </div>
+                </div>
 
-                    <label class="check-row" style="margin-top:12px">
-                        <input type="checkbox" id="patternFillOther">
-                        <span>Fill <strong>remaining</strong> days in each week with the other household</span>
-                    </label>
+                <div id="panelWeekend" class="panel-hidden">
+                    <div class="field">
+                        <label>Who has the first weekend</label>
+                        <div class="parent-picks" style="margin-bottom:0">
+                            <button type="button" class="parent-pick" id="weekendMom" data-parent="mom">Mom</button>
+                            <button type="button" class="parent-pick active" id="weekendDad" data-parent="dad">Dad</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelSame" class="panel-hidden">
+                    <div class="field">
+                        <label>Nights for one house (the rest go to the other)</label>
+                        <div class="weekday-grid" id="weekdayGridEvery"></div>
+                    </div>
+                    <div class="field">
+                        <label>Those nights go to</label>
+                        <div class="parent-picks" style="margin-bottom:0">
+                            <button type="button" class="parent-pick" id="everyPickMom" data-parent="mom">Mom</button>
+                            <button type="button" class="parent-pick active" id="everyPickDad" data-parent="dad">Dad</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panel223" class="panel-hidden">
+                    <div class="field">
+                        <label>Who starts the 2-2-3 cycle</label>
+                        <div class="parent-picks" style="margin-bottom:0">
+                            <button type="button" class="parent-pick" id="cycle223Mom" data-parent="mom">Mom</button>
+                            <button type="button" class="parent-pick active" id="cycle223Dad" data-parent="dad">Dad</button>
+                        </div>
+                    </div>
+                    <p class="field-hint">2 nights / 2 nights / 3 nights, then it swaps. Uses the From date as day 1.</p>
+                </div>
+
+                <div id="panelCustom" class="panel-hidden">
+                    <div class="field">
+                        <label>Tap each night</label>
+                        <div class="weekday-grid" id="customNightGrid"></div>
+                    </div>
+                </div>
+
+                <details class="more-options">
+                    <summary>More options</summary>
                     <label class="check-row">
                         <input type="checkbox" id="patternSkipSchool" checked>
-                        <span>Skip <strong>TUSD no-school days</strong></span>
+                        <span>Skip <strong>school-closed days</strong></span>
                     </label>
-                    <div class="field" style="margin-top:14px">
+                    <div class="field" style="margin-top:10px">
                         <label>If a day is already set</label>
                         <div class="radio-stack">
                             <label class="radio-card">
                                 <input type="radio" name="patternConflict" value="skip" checked>
                                 <div>
-                                    <strong>Skip it (recommended)</strong>
-                                    <span>Keeps spring break, vacations, and swaps.</span>
+                                    <strong>Skip it</strong>
+                                    <span>Keeps breaks, vacations, and swaps.</span>
                                 </div>
                             </label>
                             <label class="radio-card">
                                 <input type="radio" name="patternConflict" value="overwrite">
                                 <div>
                                     <strong>Overwrite</strong>
-                                    <span>Replaces existing days that match the pattern.</span>
+                                    <span>Replaces days that match the pattern.</span>
                                 </div>
                             </label>
                         </div>
                     </div>
-                </div>
+                </details>
 
-                <div class="pattern-preview" id="patternPreview">Choose a pattern to preview.</div>
+                <div class="pattern-preview" id="patternPreview">
+                    <div id="patternPreviewText">Choose a pattern to preview.</div>
+                    <div class="preview-week" id="recipePreviewStrip" hidden></div>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="patternCancel">Cancel</button>
                     <button type="button" class="btn btn-primary" id="patternApply" disabled>Apply to calendar</button>
@@ -1206,6 +1232,7 @@
         const REMEMBER_KEY = 'custodyCalendar.remember.v1';
         const VIEW_KEY = 'custodyCalendar.view.v1';
         const KIOSK_KEY = 'custodyCalendar.kiosk.v1';
+        const RECIPE_KEY = 'custodyCalendar.recipe.v1';
         const AUTO_REFRESH_MS = 60 * 1000;
         const UNDO_MAX = 30;
         const LONG_VIEWS = new Set(['quarter', 'sixmonth', 'year']);
@@ -1238,13 +1265,13 @@
         let dirty = false;
         let selectedDates = new Set();
         let editParent = 'mom';
-        let entryMode = 'alternate'; // alternate | every | nl
+        let recipe = localStorage.getItem(RECIPE_KEY) || 'handoffs';
         let everyDays = new Set([3, 4, 5, 6, 0, 1]);
         let everyParent = 'dad';
-        let weekADays = new Set([3, 4, 5, 6, 0, 1]);
-        let weekBDays = new Set([3, 4, 5]);
-        let weekAParent = 'dad';
-        let weekBParent = 'dad';
+        let weekOnParent = 'dad';
+        let weekendParent = 'dad';
+        let cycle223Parent = 'dad';
+        let customNights = { 0: 'dad', 1: 'dad', 2: 'mom', 3: 'mom', 4: 'dad', 5: 'dad', 6: 'dad' };
         let kioskMode = localStorage.getItem(KIOSK_KEY) === '1';
         let undoStack = [];
         let refreshTimer = null;
@@ -2479,91 +2506,133 @@
             });
         }
 
+        function houseLabel(key) {
+            return shortLabel(data.parents[key]?.label, key === 'dad' ? 'Dad' : 'Mom');
+        }
+
+        function fillSelect(el, options, value) {
+            if (!el) return;
+            el.innerHTML = '';
+            options.forEach((opt) => {
+                const o = document.createElement('option');
+                o.value = String(opt.value);
+                o.textContent = opt.label;
+                el.appendChild(o);
+            });
+            if (value != null) el.value = String(value);
+        }
+
+        function houseOptions() {
+            return [
+                { value: 'mom', label: houseLabel('mom') },
+                { value: 'dad', label: houseLabel('dad') },
+            ];
+        }
+
+        function ensureHandoffSelects() {
+            const days = ScheduleEntry.DOW_SHORT.map((label, value) => ({ value, label }));
+            fillSelect($('handoff1Dow'), days, $('handoff1Dow').options.length ? $('handoff1Dow').value : 1);
+            fillSelect($('handoff2Dow'), days, $('handoff2Dow').options.length ? $('handoff2Dow').value : 3);
+            const houses = houseOptions();
+            fillSelect($('handoff1From'), houses, $('handoff1From').value || 'dad');
+            fillSelect($('handoff1To'), houses, $('handoff1To').value || 'mom');
+            fillSelect($('handoff2From'), houses, $('handoff2From').value || 'mom');
+            fillSelect($('handoff2To'), houses, $('handoff2To').value || 'dad');
+        }
+
+        function currentHandoffs() {
+            return [
+                { dow: Number($('handoff1Dow').value), from: $('handoff1From').value, to: $('handoff1To').value },
+                { dow: Number($('handoff2Dow').value), from: $('handoff2From').value, to: $('handoff2To').value },
+            ];
+        }
+
         function syncParentPicks() {
             const momL = data.parents.mom.label || "Mom's House";
             const dadL = data.parents.dad.label || "Dad's House";
-            $('everyPickMom').textContent = momL;
-            $('everyPickDad').textContent = dadL;
-            $('everyPickMom').style.color = data.parents.mom.color || '';
-            $('everyPickDad').style.color = data.parents.dad.color || '';
-            $('everyPickMom').classList.toggle('active', everyParent === 'mom');
-            $('everyPickDad').classList.toggle('active', everyParent === 'dad');
-
-            $('aPickMom').classList.toggle('active', weekAParent === 'mom');
-            $('aPickDad').classList.toggle('active', weekAParent === 'dad');
-            $('bPickMom').classList.toggle('active', weekBParent === 'mom');
-            $('bPickDad').classList.toggle('active', weekBParent === 'dad');
-            $('aPickMom').style.color = data.parents.mom.color || '';
-            $('aPickDad').style.color = data.parents.dad.color || '';
-            $('bPickMom').style.color = data.parents.mom.color || '';
-            $('bPickDad').style.color = data.parents.dad.color || '';
+            const pairs = [
+                ['everyPickMom', 'everyPickDad', everyParent],
+                ['weekOnMom', 'weekOnDad', weekOnParent],
+                ['weekendMom', 'weekendDad', weekendParent],
+                ['cycle223Mom', 'cycle223Dad', cycle223Parent],
+            ];
+            pairs.forEach(([momId, dadId, cur]) => {
+                const momBtn = $(momId);
+                const dadBtn = $(dadId);
+                if (!momBtn || !dadBtn) return;
+                momBtn.textContent = momL;
+                dadBtn.textContent = dadL;
+                momBtn.style.color = data.parents.mom.color || '';
+                dadBtn.style.color = data.parents.dad.color || '';
+                momBtn.classList.toggle('active', cur === 'mom');
+                dadBtn.classList.toggle('active', cur === 'dad');
+            });
         }
 
-        function setEntryMode(mode) {
-            entryMode = mode;
-            document.querySelectorAll('[data-entry-mode]').forEach((b) => {
-                b.classList.toggle('active', b.dataset.entryMode === mode);
+        function setRecipe(next) {
+            recipe = next || 'handoffs';
+            localStorage.setItem(RECIPE_KEY, recipe);
+            document.querySelectorAll('[data-recipe]').forEach((b) => {
+                b.classList.toggle('active', b.dataset.recipe === recipe);
             });
-            $('panelNl').classList.toggle('panel-hidden', mode !== 'nl');
-            $('panelStructured').classList.toggle('panel-hidden', mode === 'nl');
-            // When in NL, still show structured underneath after interpret — keep structured visible after interpret
-            if (mode === 'nl') {
-                // NL only first; interpret can switch to structured
-            } else {
-                $('panelEvery').classList.toggle('panel-hidden', mode !== 'every');
-                $('panelAlternate').classList.toggle('panel-hidden', mode !== 'alternate');
-            }
+            $('panelHandoffs').classList.toggle('panel-hidden', recipe !== 'handoffs');
+            $('panelWeekOn').classList.toggle('panel-hidden', recipe !== 'weekon');
+            $('panelWeekend').classList.toggle('panel-hidden', recipe !== 'weekend');
+            $('panelSame').classList.toggle('panel-hidden', recipe !== 'samenights');
+            $('panel223').classList.toggle('panel-hidden', recipe !== 'cycle223');
+            $('panelCustom').classList.toggle('panel-hidden', recipe !== 'custom');
             updatePatternPreview();
         }
 
         function collectPatternConfig() {
-            const mode = entryMode === 'nl' ? (window._nlResolvedMode || 'alternate') : entryMode;
-            // If user is on NL tab without interpreting, try live interpret
-            if (entryMode === 'nl' && !window._nlResolvedMode) {
-                return null;
-            }
             const start = $('patternStart').value;
             const end = $('patternEnd').value;
-            const anchor = $('patternAnchor').value || start;
-            const fillOther = $('patternFillOther').checked;
+            const anchor = $('patternAnchor')?.value || start;
             const skipSchool = $('patternSkipSchool').checked;
             const conflict = patternConflictMode();
-
-            if (mode === 'every') {
+            const shared = { start, end, skipSchool, conflict };
+            if (recipe === 'handoffs') {
+                return { ...shared, mode: 'handoffs', handoffs: currentHandoffs() };
+            }
+            if (recipe === 'weekon') {
                 return {
-                    mode: 'every',
-                    start,
-                    end,
-                    every: { days: [...everyDays], parent: everyParent },
-                    fillOther,
-                    skipSchool,
-                    conflict,
+                    ...shared,
+                    mode: 'alternate',
+                    anchor,
+                    fillOther: false,
+                    weekA: { days: [0, 1, 2, 3, 4, 5, 6], parent: weekOnParent },
+                    weekB: { days: [0, 1, 2, 3, 4, 5, 6], parent: weekOnParent === 'mom' ? 'dad' : 'mom' },
                 };
             }
-            return {
-                mode: 'alternate',
-                start,
-                end,
-                anchor,
-                weekA: { days: [...weekADays], parent: weekAParent },
-                weekB: { days: [...weekBDays], parent: weekBParent },
-                fillOther,
-                skipSchool,
-                conflict,
-            };
+            if (recipe === 'weekend') {
+                return {
+                    ...shared,
+                    mode: 'alternate',
+                    anchor,
+                    fillOther: false,
+                    weekA: { days: [6, 0], parent: weekendParent },
+                    weekB: { days: [6, 0], parent: weekendParent === 'mom' ? 'dad' : 'mom' },
+                };
+            }
+            if (recipe === 'samenights') {
+                return {
+                    ...shared,
+                    mode: 'every',
+                    fillOther: true,
+                    every: { days: [...everyDays], parent: everyParent },
+                };
+            }
+            if (recipe === 'cycle223') {
+                return { ...shared, mode: '223', firstParent: cycle223Parent, anchor: start };
+            }
+            return { ...shared, mode: 'weekly', nights: { ...customNights } };
         }
 
         function computePatternPlan() {
-            if (entryMode === 'nl' && !window._nlResolvedMode) {
-                return { invalid: 'Tap Interpret to turn your description into a schedule, then Apply.', byParent: { mom: [], dad: [] } };
-            }
             const cfg = collectPatternConfig();
-            if (!cfg) return { invalid: 'Tap Interpret first.', byParent: { mom: [], dad: [] } };
-
             if (typeof ScheduleEntry === 'undefined') {
                 return { invalid: 'Schedule entry module failed to load.', byParent: { mom: [], dad: [] } };
             }
-
             const map = dayMap();
             return ScheduleEntry.expandPattern(
                 cfg,
@@ -2583,111 +2652,140 @@
             return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
 
+        function overnightForPreview(dow) {
+            if (recipe === 'handoffs') return ScheduleEntry.overnightFromHandoffs(dow, currentHandoffs());
+            if (recipe === 'samenights') return everyDays.has(dow) ? everyParent : (everyParent === 'mom' ? 'dad' : 'mom');
+            if (recipe === 'custom') return customNights[dow];
+            if (recipe === 'weekend') return (dow === 0 || dow === 6) ? weekendParent : null;
+            if (recipe === 'weekon') return weekOnParent;
+            if (recipe === 'cycle223') {
+                return (dow < 2 || (dow >= 4 && dow < 7)) ? cycle223Parent : (cycle223Parent === 'mom' ? 'dad' : 'mom');
+            }
+            return null;
+        }
+
+        function renderRecipeStrip() {
+            const strip = $('recipePreviewStrip');
+            if (!strip) return;
+            strip.hidden = false;
+            strip.innerHTML = '';
+            const days = 7;
+            for (let d = 0; d < days; d++) {
+                const cell = document.createElement('div');
+                cell.className = 'preview-day';
+                const parent = overnightForPreview(d);
+                const next = overnightForPreview((d + 1) % 7);
+                const split = parent && next && parent !== next;
+                if (!parent) {
+                    cell.classList.add('open');
+                } else if (split) {
+                    paintSplitBackground(cell, parent, next);
+                } else {
+                    cell.style.background = parentColor(parent);
+                }
+                const dow = document.createElement('div');
+                dow.textContent = ScheduleEntry.DOW_SHORT[d];
+                const who = document.createElement('div');
+                who.textContent = !parent ? '—' : (split ? parentInitial(parent) + '→' + parentInitial(next) : parentInitial(parent));
+                cell.appendChild(dow);
+                cell.appendChild(who);
+                strip.appendChild(cell);
+            }
+        }
+
         function updatePatternPreview() {
-            const el = $('patternPreview');
+            const text = $('patternPreviewText');
             const applyBtn = $('patternApply');
+            const strip = $('recipePreviewStrip');
+            if (!$('patternStart') || !$('patternPreview')) return;
             const plan = computePatternPlan();
             if (plan.invalid) {
-                el.innerHTML = plan.invalid;
+                text.innerHTML = plan.invalid;
                 applyBtn.disabled = true;
+                if (strip) strip.hidden = true;
                 return;
             }
             const momN = (plan.byParent.mom || []).length;
             const dadN = (plan.byParent.dad || []).length;
-            const momL = escapeHtml(shortLabel(data.parents.mom.label, 'Mom'));
-            const dadL = escapeHtml(shortLabel(data.parents.dad.label, 'Dad'));
+            const momL = escapeHtml(houseLabel('mom'));
+            const dadL = escapeHtml(houseLabel('dad'));
             const lines = [];
-            if (entryMode === 'alternate' || window._nlResolvedMode === 'alternate') {
+            if (recipe === 'handoffs') {
+                const [a, b] = currentHandoffs();
                 lines.push(
-                    `<strong>Alternating weeks</strong> — Week A: ${escapeHtml(ScheduleEntry.formatDays([...weekADays]))} (${weekAParent === 'mom' ? momL : dadL}); ` +
-                    `Week B: ${escapeHtml(ScheduleEntry.formatDays([...weekBDays]))} (${weekBParent === 'mom' ? momL : dadL}).`
+                    `<strong>Two exchanges</strong> — ${ScheduleEntry.DOW_SHORT[a.dow]} ${escapeHtml(houseLabel(a.from))} → ${escapeHtml(houseLabel(a.to))}, ` +
+                    `${ScheduleEntry.DOW_SHORT[b.dow]} ${escapeHtml(houseLabel(b.from))} → ${escapeHtml(houseLabel(b.to))}.`
                 );
+            } else if (recipe === 'weekon') {
+                lines.push(`<strong>Week on / week off</strong> — first week ${escapeHtml(houseLabel(weekOnParent))}.`);
+            } else if (recipe === 'weekend') {
+                lines.push(`<strong>Every other weekend</strong> — first weekend ${escapeHtml(houseLabel(weekendParent))}.`);
+            } else if (recipe === 'samenights') {
+                lines.push(`<strong>Same nights every week</strong> — ${escapeHtml(ScheduleEntry.formatDays([...everyDays]))} → ${escapeHtml(houseLabel(everyParent))}.`);
+            } else if (recipe === 'cycle223') {
+                lines.push(`<strong>2-2-3</strong> — ${escapeHtml(houseLabel(cycle223Parent))} starts.`);
             } else {
-                lines.push(
-                    `<strong>Every week</strong> — ${escapeHtml(ScheduleEntry.formatDays([...everyDays]))} → ${everyParent === 'mom' ? momL : dadL}.`
-                );
+                lines.push('<strong>Custom week</strong> — tap nights above.');
             }
             lines.push(`Will set <strong>${momN}</strong> day(s) to <strong>${momL}</strong>, <strong>${dadN}</strong> to <strong>${dadL}</strong>.`);
             if (plan.skippedExisting) lines.push(`Will <strong>skip ${plan.skippedExisting}</strong> already-set day(s).`);
-            if (plan.skippedSchool) lines.push(`Will leave <strong>${plan.skippedSchool}</strong> TUSD no-school day(s) empty.`);
+            if (plan.skippedSchool) lines.push(`Will leave <strong>${plan.skippedSchool}</strong> school-closed day(s) empty.`);
             if (patternConflictMode() === 'overwrite' && momN + dadN) {
                 lines.push('<span style="color:#e8c878">Overwrite is on.</span>');
             }
             const total = momN + dadN;
             applyBtn.disabled = total === 0;
             if (!total) lines.push('Nothing to change with the current options.');
-            el.innerHTML = lines.join('<br>');
+            text.innerHTML = lines.join('<br>');
+            renderRecipeStrip();
         }
 
-        function applyNlConfig(cfg) {
-            window._nlResolvedMode = cfg.mode;
-            if (cfg.start) $('patternStart').value = cfg.start;
-            if (cfg.end) $('patternEnd').value = cfg.end;
-            if (cfg.anchor) $('patternAnchor').value = cfg.anchor;
-            else if (cfg.start) $('patternAnchor').value = cfg.start;
-            $('patternFillOther').checked = !!cfg.fillOther;
-
-            if (cfg.mode === 'every') {
-                everyDays = new Set(cfg.every.days || []);
-                everyParent = cfg.every.parent || 'dad';
-                setEntryMode('every');
-                syncWeekdayGrid('weekdayGridEvery', everyDays);
-            } else {
-                weekADays = new Set(cfg.weekA.days || []);
-                weekBDays = new Set(cfg.weekB.days || []);
-                weekAParent = cfg.weekA.parent || 'dad';
-                weekBParent = cfg.weekB.parent || 'dad';
-                setEntryMode('alternate');
-                syncWeekdayGrid('weekdayGridA', weekADays);
-                syncWeekdayGrid('weekdayGridB', weekBDays);
-            }
-            // Show structured panels for review after NL
-            $('panelStructured').classList.remove('panel-hidden');
-            $('panelNl').classList.remove('panel-hidden');
-            syncParentPicks();
-            updatePatternPreview();
-        }
-
-        function interpretNl() {
-            const raw = $('patternNL').value;
-            const result = ScheduleEntry.interpretNaturalLanguage(raw, {
-                momLabel: data.parents.mom.label,
-                dadLabel: data.parents.dad.label,
-            });
-            const box = $('patternNLResult');
-            if (!result.ok) {
-                box.innerHTML = '<span style="color:#ffb4a8">' + escapeHtml(result.error) + '</span>';
-                window._nlResolvedMode = null;
-                updatePatternPreview();
+        function buildCustomNightGrid() {
+            const el = $('customNightGrid');
+            if (!el || el.dataset.built === '1') {
+                syncCustomNightGrid();
                 return;
             }
-            // If dates missing, keep TUSD/school year fields
-            const cfg = result.config;
-            if (!cfg.start && $('patternStart').value) cfg.start = $('patternStart').value;
-            if (!cfg.end && $('patternEnd').value) cfg.end = $('patternEnd').value;
-            if (!cfg.anchor) cfg.anchor = cfg.start || $('patternAnchor').value;
-            box.innerHTML = '<strong>Got it:</strong> ' + escapeHtml(result.summary) +
-                '<br><span style="color:var(--text-3)">Review the fields below, adjust if needed, then Apply.</span>';
-            applyNlConfig(cfg);
+            el.dataset.built = '1';
+            ScheduleEntry.DOW_SHORT.forEach((label, d) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'weekday-chip';
+                btn.dataset.dow = String(d);
+                btn.addEventListener('click', () => {
+                    customNights[d] = customNights[d] === 'dad' ? 'mom' : 'dad';
+                    syncCustomNightGrid();
+                    updatePatternPreview();
+                });
+                el.appendChild(btn);
+            });
+            syncCustomNightGrid();
+        }
+
+        function syncCustomNightGrid() {
+            document.querySelectorAll('#customNightGrid .weekday-chip').forEach((btn) => {
+                const d = Number(btn.dataset.dow);
+                const parent = customNights[d];
+                btn.textContent = ScheduleEntry.DOW_SHORT[d] + '\n' + parentInitial(parent);
+                btn.classList.add('active');
+                btn.style.color = parentColor(parent);
+                btn.style.borderColor = parentColor(parent);
+            });
         }
 
         function openPatternModal() {
             if (kioskMode) return;
             closeMenu();
-            window._nlResolvedMode = null;
             populateSchoolYearSelect();
-            if (!$('patternAnchor').value && $('patternStart').value) {
+            if ($('patternAnchor') && !$('patternAnchor').value && $('patternStart').value) {
                 $('patternAnchor').value = $('patternStart').value;
             }
+            ensureHandoffSelects();
             buildWeekdayGrid('weekdayGridEvery', () => everyDays, (s) => { everyDays = s; });
-            buildWeekdayGrid('weekdayGridA', () => weekADays, (s) => { weekADays = s; });
-            buildWeekdayGrid('weekdayGridB', () => weekBDays, (s) => { weekBDays = s; });
             syncWeekdayGrid('weekdayGridEvery', everyDays);
-            syncWeekdayGrid('weekdayGridA', weekADays);
-            syncWeekdayGrid('weekdayGridB', weekBDays);
+            buildCustomNightGrid();
             syncParentPicks();
-            setEntryMode(entryMode === 'nl' ? 'alternate' : entryMode);
-            updatePatternPreview();
+            setRecipe(recipe);
             $('patternModal').classList.add('show');
         }
 
@@ -2708,7 +2806,7 @@
             }
             let msg = `Set ${momN} day(s) to ${shortLabel(data.parents.mom.label, 'Mom')}, ${dadN} to ${shortLabel(data.parents.dad.label, 'Dad')}`;
             if (plan.skippedExisting) msg += `, skip ${plan.skippedExisting} existing`;
-            if (plan.skippedSchool) msg += `, leave ${plan.skippedSchool} TUSD no-school empty`;
+            if (plan.skippedSchool) msg += `, leave ${plan.skippedSchool} school-closed empty`;
             msg += '.';
             if (total >= 14 || patternConflictMode() === 'overwrite') {
                 if (!confirm(msg + '\n\nContinue? You can Undo on this device if needed.')) return;
@@ -3289,90 +3387,29 @@
         $('patternCancel').addEventListener('click', closePatternModal);
         $('patternModal').addEventListener('click', (e) => { if (e.target === $('patternModal')) closePatternModal(); });
         $('patternApply').addEventListener('click', applyPatternFromModal);
-        $('patternNLInterpret').addEventListener('click', interpretNl);
 
-        document.querySelectorAll('[data-entry-mode]').forEach((b) => {
-            b.addEventListener('click', () => {
-                window._nlResolvedMode = null;
-                setEntryMode(b.dataset.entryMode);
-                if (b.dataset.entryMode !== 'nl') {
-                    $('panelStructured').classList.remove('panel-hidden');
-                    $('panelEvery').classList.toggle('panel-hidden', b.dataset.entryMode !== 'every');
-                    $('panelAlternate').classList.toggle('panel-hidden', b.dataset.entryMode !== 'alternate');
-                }
-            });
+        document.querySelectorAll('[data-recipe]').forEach((b) => {
+            b.addEventListener('click', () => setRecipe(b.dataset.recipe));
         });
-
-        document.querySelectorAll('[data-preset-every]').forEach((b) => {
-            b.addEventListener('click', () => {
-                const k = b.dataset.presetEvery;
-                everyDays = new Set(k === 'clear' ? [] : presetDays(k === 'wedmon' ? 'wedmon' : k));
-                syncWeekdayGrid('weekdayGridEvery', everyDays);
-                updatePatternPreview();
-            });
+        ['handoff1Dow', 'handoff1From', 'handoff1To', 'handoff2Dow', 'handoff2From', 'handoff2To'].forEach((id) => {
+            $(id).addEventListener('change', updatePatternPreview);
         });
-        document.querySelectorAll('[data-preset-a]').forEach((b) => {
-            b.addEventListener('click', () => {
-                weekADays = new Set(presetDays(b.dataset.presetA));
-                syncWeekdayGrid('weekdayGridA', weekADays);
-                updatePatternPreview();
-            });
-        });
-        document.querySelectorAll('[data-preset-b]').forEach((b) => {
-            b.addEventListener('click', () => {
-                weekBDays = new Set(presetDays(b.dataset.presetB));
-                syncWeekdayGrid('weekdayGridB', weekBDays);
-                updatePatternPreview();
-            });
-        });
-
-        $('presetAltFull').addEventListener('click', () => {
-            weekADays = new Set(presetDays('all'));
-            weekBDays = new Set(presetDays('all'));
-            weekAParent = 'dad';
-            weekBParent = 'mom';
-            syncWeekdayGrid('weekdayGridA', weekADays);
-            syncWeekdayGrid('weekdayGridB', weekBDays);
-            syncParentPicks();
-            updatePatternPreview();
-        });
-        $('presetAltAsym').addEventListener('click', () => {
-            weekADays = new Set(presetDays('wedmon'));
-            weekBDays = new Set(presetDays('wedfri'));
-            weekAParent = 'dad';
-            weekBParent = 'dad';
-            syncWeekdayGrid('weekdayGridA', weekADays);
-            syncWeekdayGrid('weekdayGridB', weekBDays);
-            syncParentPicks();
-            updatePatternPreview();
-        });
-        $('presetAltWeekend').addEventListener('click', () => {
-            weekADays = new Set(presetDays('weekend'));
-            weekBDays = new Set(presetDays('weekend'));
-            weekAParent = 'dad';
-            weekBParent = 'mom';
-            $('patternFillOther').checked = false;
-            syncWeekdayGrid('weekdayGridA', weekADays);
-            syncWeekdayGrid('weekdayGridB', weekBDays);
-            syncParentPicks();
-            updatePatternPreview();
-        });
-
         $('everyPickMom').addEventListener('click', () => { everyParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
         $('everyPickDad').addEventListener('click', () => { everyParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
-        $('aPickMom').addEventListener('click', () => { weekAParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
-        $('aPickDad').addEventListener('click', () => { weekAParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
-        $('bPickMom').addEventListener('click', () => { weekBParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
-        $('bPickDad').addEventListener('click', () => { weekBParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
+        $('weekOnMom').addEventListener('click', () => { weekOnParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
+        $('weekOnDad').addEventListener('click', () => { weekOnParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
+        $('weekendMom').addEventListener('click', () => { weekendParent = 'mom'; syncParentPicks(); updatePatternPreview(); });
+        $('weekendDad').addEventListener('click', () => { weekendParent = 'dad'; syncParentPicks(); updatePatternPreview(); });
+        $('cycle223Mom').addEventListener('click', () => { cycle223Parent = 'mom'; syncParentPicks(); updatePatternPreview(); });
+        $('cycle223Dad').addEventListener('click', () => { cycle223Parent = 'dad'; syncParentPicks(); updatePatternPreview(); });
 
         $('patternStart').addEventListener('change', () => {
             $('patternSchoolYear').value = '';
-            if (!$('patternAnchor').value) $('patternAnchor').value = $('patternStart').value;
+            if ($('patternAnchor') && !$('patternAnchor').value) $('patternAnchor').value = $('patternStart').value;
             updatePatternPreview();
         });
         $('patternEnd').addEventListener('change', () => { $('patternSchoolYear').value = ''; updatePatternPreview(); });
-        $('patternAnchor').addEventListener('change', updatePatternPreview);
-        $('patternFillOther').addEventListener('change', updatePatternPreview);
+        if ($('patternAnchor')) $('patternAnchor').addEventListener('change', updatePatternPreview);
         $('patternSkipSchool').addEventListener('change', updatePatternPreview);
         $('patternSchoolYear').addEventListener('change', () => {
             if ($('patternSchoolYear').value) {

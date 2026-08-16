@@ -270,6 +270,20 @@
     };
   }
 
+  /** Overnight owner for a weekday given exchange cuts (outgoing last day = from). */
+  function overnightFromHandoffs(dow, cuts) {
+    for (let i = 0; i < 7; i++) {
+      const d = (dow - i + 7) % 7;
+      let hit = null;
+      for (let c = 0; c < cuts.length; c++) {
+        if (cuts[c].dow === d) { hit = cuts[c]; break; }
+      }
+      if (!hit) continue;
+      return i === 0 ? hit.from : hit.to;
+    }
+    return null;
+  }
+
   /**
    * @param {object} p
    * @param {(iso:string)=>any} dayMapFn - returns assignment or null
@@ -312,7 +326,30 @@
       return ((diff % 2) + 2) % 2 === 0;
     }
 
-    if (mode === 'every') {
+    if (mode === 'handoffs') {
+      const cuts = (p.handoffs || []).filter((h) => h && (h.from === 'mom' || h.from === 'dad') && (h.to === 'mom' || h.to === 'dad') && h.from !== h.to && h.dow >= 0 && h.dow <= 6);
+      if (cuts.length < 2) return { invalid: 'Set two different exchange days.', byParent, skippedExisting, skippedSchool };
+      if (cuts[0].dow === cuts[1].dow) return { invalid: 'Exchange days must be different weekdays.', byParent, skippedExisting, skippedSchool };
+      eachDate(start, end, (iso) => pushDay(iso, overnightFromHandoffs(dateFromISO(iso).getDay(), cuts)));
+    } else if (mode === '223') {
+      const first = p.firstParent === 'mom' ? 'mom' : 'dad';
+      const second = first === 'mom' ? 'dad' : 'mom';
+      const origin = p.anchor || start;
+      const originTime = dateFromISO(origin).getTime();
+      eachDate(start, end, (iso) => {
+        const day = dateFromISO(iso);
+        const diff = Math.round((day.getTime() - originTime) / (24 * 60 * 60 * 1000));
+        const slot = ((diff % 14) + 14) % 14;
+        const parent = (slot < 2 || (slot >= 4 && slot < 7) || (slot >= 9 && slot < 11)) ? first : second;
+        pushDay(iso, parent);
+      });
+    } else if (mode === 'weekly') {
+      const nights = p.nights || {};
+      eachDate(start, end, (iso) => {
+        const parent = nights[dateFromISO(iso).getDay()];
+        if (parent === 'mom' || parent === 'dad') pushDay(iso, parent);
+      });
+    } else if (mode === 'every') {
       const days = new Set(p.every?.days || []);
       const parent = p.every?.parent || 'dad';
       if (!days.size) return { invalid: 'Select at least one weekday.', byParent, skippedExisting, skippedSchool };
@@ -348,6 +385,7 @@
   global.ScheduleEntry = {
     interpretNaturalLanguage,
     expandPattern,
+    overnightFromHandoffs,
     expandDowRange,
     parseDaySpan,
     formatDays,
