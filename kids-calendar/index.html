@@ -944,7 +944,7 @@
                     <button type="button" class="chip-btn clear" id="assignClear">Clear</button>
                     <button type="button" class="chip-btn ghost" id="rangeSplitToggle" hidden>Make full day</button>
                     <button type="button" class="chip-btn ghost" id="rangeDetails">Details…</button>
-                    <button type="button" class="chip-btn ghost" id="rangeCancel">Cancel</button>
+                    <button type="button" class="chip-btn ghost" id="rangeCancel">Clear all</button>
                 </div>
             </div>
 
@@ -1224,8 +1224,7 @@
         let viewYear, viewMonth;
         let multiAnchor = null; // Date for quarter/6mo/year start month
         let dirty = false;
-        let rangeAnchor = null;
-        let rangeEnd = null;
+        let selectedDates = new Set();
         let editParent = 'mom';
         let entryMode = 'alternate'; // alternate | every | nl
         let everyDays = new Set([3, 4, 5, 6, 0, 1]);
@@ -1580,17 +1579,30 @@
             return map;
         }
 
+        function selectedList() {
+            return Array.from(selectedDates).sort(compareISO);
+        }
+
         function selectedRange() {
-            if (!rangeAnchor) return null;
-            const a = rangeAnchor;
-            const b = rangeEnd || rangeAnchor;
-            return compareISO(a, b) <= 0 ? { start: a, end: b } : { start: b, end: a };
+            const days = selectedList();
+            if (!days.length) return null;
+            return { start: days[0], end: days[days.length - 1], days };
         }
 
         function inSelected(iso) {
-            const r = selectedRange();
-            if (!r) return false;
-            return compareISO(iso, r.start) >= 0 && compareISO(iso, r.end) <= 0;
+            return selectedDates.has(iso);
+        }
+
+        function selectionLabel(days) {
+            if (!days.length) return 'Select days';
+            if (days.length === 1) return formatPretty(days[0]);
+            let contiguous = true;
+            for (let i = 1; i < days.length; i++) {
+                if (addDaysISO(days[i - 1], 1) !== days[i]) { contiguous = false; break; }
+            }
+            if (contiguous) return formatPretty(days[0]) + ' → ' + formatPretty(days[days.length - 1]);
+            if (days.length <= 4) return days.map(formatPretty).join(', ');
+            return days.length + ' days · ' + formatPretty(days[0]) + ' … ' + formatPretty(days[days.length - 1]);
         }
 
         function assignmentLabel(asg) {
@@ -1608,41 +1620,35 @@
             document.querySelectorAll('[data-date]').forEach((el) => {
                 const iso = el.dataset.date;
                 const sel = inSelected(iso);
-                const isEdge = iso === rangeAnchor || iso === (rangeEnd || rangeAnchor);
                 el.classList.toggle('in-range', sel);
-                el.classList.toggle('selected', sel && isEdge);
+                el.classList.toggle('selected', sel);
             });
 
-            const r = selectedRange();
+            const days = selectedList();
             const bar = $('rangeBar');
             const hint = $('selectionHint');
-            if (!r || kioskMode) {
+            if (!days.length || kioskMode) {
                 bar.classList.remove('show');
                 $('rangeSplitToggle').hidden = true;
-                hint.textContent = kioskMode ? '' : 'Tap days to select a range — it stays selected across weeks — then Mom / Dad';
+                hint.textContent = kioskMode ? '' : 'Tap days to select or unselect them — then Mom / Dad';
                 hint.classList.remove('active');
                 return;
             }
             bar.classList.add('show');
-            const label = r.start === r.end
-                ? formatPretty(r.start)
-                : formatPretty(r.start) + ' → ' + formatPretty(r.end);
-            $('rangeBarText').textContent = label;
-            const days = [];
-            eachDate(r.start, r.end, (iso) => days.push(iso));
+            $('rangeBarText').textContent = selectionLabel(days);
             hint.textContent = days.length === 1
-                ? 'Selected ' + formatPretty(r.start) + ' — tap more days (even in another week) to grow the range'
-                : days.length + ' days selected · tap more days to grow the range, or choose Mom / Dad';
+                ? 'Selected ' + formatPretty(days[0]) + ' — tap it again to unselect, or tap more days'
+                : days.length + ' days selected · tap a highlighted day to unselect it';
             hint.classList.add('active');
 
             const splitBtn = $('rangeSplitToggle');
             const raw = rawDayMap();
-            const canSplit = r.start === r.end && canHouseChange(r.start, raw);
+            const canSplit = days.length === 1 && canHouseChange(days[0], raw);
             if (!canSplit) {
                 splitBtn.hidden = true;
             } else {
                 splitBtn.hidden = false;
-                const ov = handoffOverride(r.start);
+                const ov = handoffOverride(days[0]);
                 splitBtn.textContent = (ov && ov.fullDay) ? 'Split day' : 'Make full day';
             }
         }
@@ -1662,28 +1668,13 @@
 
         function onDayClick(iso) {
             if (kioskMode) return;
-            if (!rangeAnchor) {
-                rangeAnchor = iso;
-                rangeEnd = null;
-            } else {
-                const r = selectedRange();
-                if (compareISO(iso, r.start) < 0) {
-                    rangeAnchor = iso;
-                    rangeEnd = r.end;
-                } else if (compareISO(iso, r.end) > 0) {
-                    rangeAnchor = r.start;
-                    rangeEnd = iso;
-                } else {
-                    rangeAnchor = r.start;
-                    rangeEnd = r.end;
-                }
-            }
+            if (selectedDates.has(iso)) selectedDates.delete(iso);
+            else selectedDates.add(iso);
             updateSelectionUI();
         }
 
         function clearSelection(updateUI) {
-            rangeAnchor = null;
-            rangeEnd = null;
+            selectedDates = new Set();
             if (updateUI !== false) updateSelectionUI();
         }
 
@@ -2395,6 +2386,12 @@
             }
         }
 
+        function assignSelected(parent, meta) {
+            const dates = selectedList();
+            if (!dates.length) return;
+            applyAssignments(dates, parent, meta);
+        }
+
         function assignRange(start, end, parent, meta) {
             const dates = [];
             eachDate(start, end, (iso) => dates.push(iso));
@@ -2402,25 +2399,24 @@
         }
 
         function openEditModal() {
-            const r = selectedRange();
-            if (!r || kioskMode) return;
+            const days = selectedList();
+            if (!days.length || kioskMode) return;
             const map = dayMap();
-            const sample = map[r.start];
+            const sample = map[days[0]];
             editParent = sample?.parent || 'mom';
-            $('editRangeLabel').textContent =
-                r.start === r.end ? formatPretty(r.start) : formatPretty(r.start) + ' → ' + formatPretty(r.end);
+            $('editRangeLabel').textContent = selectionLabel(days);
             $('editStartTime').value = sample?.startTime || '';
             $('editEndTime').value = sample?.endTime || '';
             $('editNote').value = sample?.note || '';
             $('pickMom').classList.toggle('active', editParent === 'mom');
             $('pickDad').classList.toggle('active', editParent === 'dad');
             const raw = rawDayMap();
-            const canHandoff = r.start === r.end && canHouseChange(r.start, raw);
+            const canHandoff = days.length === 1 && canHouseChange(days[0], raw);
             $('handoffFields').hidden = !canHandoff;
             if (canHandoff) {
-                const ov = handoffOverride(r.start);
+                const ov = handoffOverride(days[0]);
                 $('editFullDay').checked = !!(ov && ov.fullDay);
-                $('editHandoffTime').value = (ov && ov.time) || sample?.handoffTime || defaultHandoffTime(r.start);
+                $('editHandoffTime').value = (ov && ov.time) || sample?.handoffTime || defaultHandoffTime(days[0]);
                 $('editHandoffTime').disabled = $('editFullDay').checked;
             }
             $('editModal').classList.add('show');
@@ -3225,18 +3221,9 @@
         $('openPatternBtn').addEventListener('click', openPatternModal);
         $('fillPatternToolbarBtn').addEventListener('click', openPatternModal);
 
-        $('assignMom').addEventListener('click', () => {
-            const r = selectedRange();
-            if (r) assignRange(r.start, r.end, 'mom');
-        });
-        $('assignDad').addEventListener('click', () => {
-            const r = selectedRange();
-            if (r) assignRange(r.start, r.end, 'dad');
-        });
-        $('assignClear').addEventListener('click', () => {
-            const r = selectedRange();
-            if (r) assignRange(r.start, r.end, null);
-        });
+        $('assignMom').addEventListener('click', () => assignSelected('mom'));
+        $('assignDad').addEventListener('click', () => assignSelected('dad'));
+        $('assignClear').addEventListener('click', () => assignSelected(null));
         $('rangeSplitToggle').addEventListener('click', toggleSplitDay);
         $('rangeCancel').addEventListener('click', () => clearSelection());
         $('rangeDetails').addEventListener('click', openEditModal);
@@ -3255,15 +3242,15 @@
             $('pickMom').classList.remove('active');
         });
         $('editApply').addEventListener('click', () => {
-            const r = selectedRange();
-            if (!r) return;
-            const handoffIso = (r.start === r.end && !$('handoffFields').hidden) ? r.start : null;
+            const days = selectedList();
+            if (!days.length) return;
+            const handoffIso = (days.length === 1 && !$('handoffFields').hidden) ? days[0] : null;
             let handoffValue = null;
             if (handoffIso) {
                 if ($('editFullDay').checked) handoffValue = { fullDay: true };
                 else if ($('editHandoffTime').value) handoffValue = { time: $('editHandoffTime').value };
             }
-            assignRange(r.start, r.end, editParent, {
+            assignSelected(editParent, {
                 startTime: $('editStartTime').value || null,
                 endTime: $('editEndTime').value || null,
                 note: $('editNote').value.trim(),
@@ -3275,9 +3262,7 @@
             closeEditModal();
         });
         $('editClear').addEventListener('click', () => {
-            const r = selectedRange();
-            if (!r) return;
-            assignRange(r.start, r.end, null);
+            assignSelected(null);
             closeEditModal();
         });
         $('editModalClose').addEventListener('click', closeEditModal);
