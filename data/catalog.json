@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T22:47:51.192Z",
+  "generatedAt": "2026-08-22T00:04:30.964Z",
   "owner": "davidcasas82",
   "hubUrl": "https://davidcasas82.github.io/",
   "projects": [
@@ -12,7 +12,18 @@
       "source": "github-pages",
       "repo": "https://github.com/davidcasas82/aeries-dashboard",
       "private": false,
-      "updatedAt": "2026-08-15T09:30:46Z"
+      "updatedAt": "2026-08-21T23:16:26Z"
+    },
+    {
+      "id": "morning-board",
+      "name": "Morning Board",
+      "tagline": "Kids leave-by countdown for the Surface Pro kiosk",
+      "url": "https://davidcasas82.github.io/morning-board/",
+      "category": "Family",
+      "source": "github-pages",
+      "repo": "https://github.com/davidcasas82/morning-board",
+      "private": false,
+      "updatedAt": "2026-08-21T19:28:57Z"
     },
     {
       "id": "nohel-delgadillo-site",
@@ -34,7 +45,7 @@
       "source": "github-pages",
       "repo": "https://github.com/davidcasas82/geometry-arena",
       "private": false,
-      "updatedAt": "2026-07-30T04:51:38Z"
+      "updatedAt": "2026-08-20T02:59:58Z"
     },
     {
       "id": "photography",
