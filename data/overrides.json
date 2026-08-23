@@ -9,6 +9,9 @@
     "tagline": "Geometry Wars–style twin-stick shooter",
     "category": "Games"
   },
+  "kids-calendar": {
+    "hidden": true
+  },
   "morning-board": {
     "name": "Morning Board",
     "tagline": "Kids leave-by countdown for the Surface Pro kiosk",
