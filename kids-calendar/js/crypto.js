@@ -10,7 +10,7 @@
   const decoder = new TextDecoder();
 
   function bufToB64(buf) {
-    const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : buf;
+    const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     let s = '';
     for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
     return btoa(s);
@@ -101,10 +101,22 @@
     );
   }
 
+  /** Kids view uses a separate encrypted blob so the family password cannot unwrap it. */
+  function isKidsConfigured(config) {
+    return Boolean(
+      config &&
+      config.owner &&
+      config.repo &&
+      config.kidsCrypto &&
+      config.kidsCrypto.ciphertext
+    );
+  }
+
   global.CustodyCrypto = {
     encryptToken,
     decryptToken,
     isConfigured,
+    isKidsConfigured,
     PBKDF2_ITERATIONS,
   };
 })(window);
