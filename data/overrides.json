@@ -12,6 +12,9 @@
   "kids-calendar": {
     "hidden": true
   },
+  "headache-journal": {
+    "hidden": true
+  },
   "morning-board": {
     "name": "Morning Board",
     "tagline": "Kids leave-by countdown for the Surface Pro kiosk",
