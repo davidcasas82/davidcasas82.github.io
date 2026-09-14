@@ -6,5 +6,21 @@
     "url": "https://davidcasasphotography.com",
     "category": "Photography",
     "source": "custom"
+  },
+  {
+    "id": "family-data",
+    "name": "Family Data",
+    "tagline": "Shared Cloudflare D1 API for household apps",
+    "url": "https://family-data.davidcasas.workers.dev/",
+    "category": "Family",
+    "source": "custom"
+  },
+  {
+    "id": "home-buying-dashboard",
+    "name": "Home Buying Dashboard",
+    "tagline": "Tustin-centered readiness and listings board",
+    "url": "https://home-buying-dashboard-4fy.pages.dev",
+    "category": "Family",
+    "source": "custom"
   }
 ]
