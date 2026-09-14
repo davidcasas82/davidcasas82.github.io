@@ -10,10 +10,14 @@
     "category": "Games"
   },
   "kids-calendar": {
-    "hidden": true
+    "name": "Kids Calendar",
+    "tagline": "Shared custody schedule (Pages host)",
+    "category": "Family"
   },
   "headache-journal": {
-    "hidden": true
+    "name": "Leah Migraine Journal",
+    "tagline": "PIN-locked symptom journal for Leah",
+    "category": "Family"
   },
   "morning-board": {
     "name": "Morning Board",
