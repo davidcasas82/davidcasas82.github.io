@@ -3,9 +3,6 @@ name: Update and publish hub
 on:
   push:
     branches: [main]
-  schedule:
-    # About four times a day — picks up new GitHub Pages sites
-    - cron: "17 3,9,15,21 * * *"
   workflow_dispatch:
   repository_dispatch:
     types: [project-published]
