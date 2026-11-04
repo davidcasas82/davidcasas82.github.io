@@ -1,7 +1,7 @@
 {
   "aeries-dashboard": {
-    "name": "Grade Dashboard",
-    "tagline": "Casas family Aeries grades and insights",
+    "name": "Family Dashboard",
+    "tagline": "Family dashboard",
     "category": "Family"
   },
   "geometry-arena": {
@@ -11,17 +11,17 @@
   },
   "kids-calendar": {
     "name": "Kids Calendar",
-    "tagline": "Shared custody schedule (Pages host)",
+    "tagline": "Family calendar (Pages host)",
     "category": "Family"
   },
   "headache-journal": {
-    "name": "Leah Migraine Journal",
-    "tagline": "PIN-locked symptom journal for Leah",
+    "name": "Private journal",
+    "tagline": "Private, PIN-locked app",
     "category": "Family"
   },
   "morning-board": {
     "name": "Morning Board",
-    "tagline": "Kids leave-by countdown for the Surface Pro kiosk",
+    "tagline": "Morning leave-by countdown",
     "category": "Family"
   },
   "nohel-delgadillo-site": {
