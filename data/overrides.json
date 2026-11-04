@@ -1,7 +1,7 @@
 {
   "aeries-dashboard": {
-    "name": "Grade Dashboard",
-    "tagline": "Casas family Aeries grades and insights",
+    "name": "Family Dashboard",
+    "tagline": "Family dashboard",
     "category": "Family"
   },
   "geometry-arena": {
@@ -15,8 +15,8 @@
     "category": "Family"
   },
   "headache-journal": {
-    "name": "Leah Migraine Journal",
-    "tagline": "PIN-locked symptom journal for Leah",
+    "name": "Private journal",
+    "tagline": "Private, PIN-locked app",
     "category": "Family"
   },
   "morning-board": {

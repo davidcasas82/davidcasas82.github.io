@@ -5,8 +5,8 @@
   "projects": [
     {
       "id": "aeries-dashboard",
-      "name": "Grade Dashboard",
-      "tagline": "Casas family Aeries grades and insights",
+      "name": "Family Dashboard",
+      "tagline": "Family dashboard",
       "url": "https://davidcasas82.github.io/aeries-dashboard/",
       "category": "Family",
       "source": "github-pages",
