@@ -1,11 +1,8 @@
-name: Update and publish hub
+name: Publish site
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-  repository_dispatch:
-    types: [project-published]
 
 permissions:
   contents: read
@@ -17,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -25,22 +22,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Discover live projects
-        env:
-          HUB_TOKEN: ${{ secrets.HUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/build-catalog.mjs
-
-      - name: Stage site
+      - name: Stage retired notice
         run: |
-          mkdir -p _site/data _site/assets
+          mkdir -p _site
           cp index.html .nojekyll _site/
-          cp assets/styles.css assets/app.js _site/assets/
-          cp data/catalog.json _site/data/
+          test ! -e _site/data
+          test ! -e _site/assets
+          test ! -e _site/catalog.json
 
       - uses: actions/configure-pages@v5
 
